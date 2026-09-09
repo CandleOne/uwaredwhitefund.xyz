@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portfolio | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="site.css" />
+    <script src="site.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+      <div class="brand">
+        <p class="brand-title">Red &amp; White Fund</p>
+        <img
+          class="brand-mark"
+          src="assets/uwacollegeofbusiness.png"
+          alt="College of Business"
+        />
+      </div>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="leadership.html">Leadership</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="publications.html">Publications</a></li>
+          <li><a href="portfolio.html" aria-current="page">Portfolio</a></li>
+          <li><a href="media.html">Media</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <h1>Portfolio</h1>
+        </div>
+      </section>
+      <section class="page-content portfolio-page" aria-labelledby="portfolio-heading">
+        <h2 id="portfolio-heading">Portfolio Overview</h2>
+        <div class="portfolio-layout">
+          <div class="portfolio-copy">
+            <h3>Investment Strategy</h3>
+            <p>
+              The Red &amp; White Fund follows a disciplined, long-term approach to
+              portfolio management. Student analysts research opportunities,
+              evaluate risk, and present recommendations for review.
+            </p>
+            <p>
+              Portfolio decisions are guided by diversification, stewardship,
+              and the Fund's commitment to creating a practical learning
+              environment for student investment managers.
+            </p>
+          </div>
+          <aside aria-label="Investment objective and policy summary">
+            <div class="portfolio-objective">
+              <p>
+                The investment objective of the Red &amp; White Fund is to pursue
+                sustainable long-run returns while meeting its risk and
+                stewardship commitments.
+              </p>
+            </div>
+            <div class="portfolio-policy">
+              <p>
+                The Fund's risk tolerance and investment guidelines are
+                maintained in its Investment Policy Statement.
+              </p>
+            </div>
+          </aside>
+        </div>
+
+        <section class="ips-section" aria-labelledby="ips-heading">
+          <div class="ips-section-header">
+            <h3 class="ips-viewer-heading" id="ips-heading">
+              Investment Policy Statement
+            </h3>
+            <div class="ips-actions">
+              <span class="ips-page-count" aria-live="polite"></span>
+              <button class="ips-nav-button ips-previous" type="button" aria-label="Previous page" title="Previous page" disabled>&larr;</button>
+              <button class="ips-nav-button ips-next" type="button" aria-label="Next page" title="Next page" disabled>&rarr;</button>
+              <a class="ips-download" href="assets/ips_draft_0904.pdf" download>
+                Download PDF
+              </a>
+            </div>
+          </div>
+          <div
+            class="ips-document"
+            data-pdf-source="assets/ips_draft_0904.pdf"
+            aria-label="Investment Policy Statement"
+          ></div>
+          <noscript>
+            <p class="ips-fallback">
+              JavaScript is required to display the document here.
+              <a href="assets/ips_draft_0904.pdf">Open the Investment Policy Statement</a>.
+            </p>
+          </noscript>
+        </section>
+      </section>
+    </main>
+    <script src="pdf-viewer.js" type="module"></script>
+    <footer class="site-footer">
+      <div class="footer-main">
+        <p class="footer-wordmark">UWA The University of West Alabama</p>
+        <ul class="footer-links">
+          <li><a href="login.html">Login</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="terms.html">Terms of Use</a></li>
+          <li><a href="#">© 2026 The University of West Alabama</a></li>
+        </ul>
+        <p class="footer-note">
+          UWA is an Equal Employment/Equal Educational Opportunity Institution
+          dedicated to providing equal opportunities and equal access to all
+          individuals regardless of race, color, religion, ethnic or national
+          origin, sex (including pregnancy), genetic information, age,
+          disability, religion, and veteran’s status. As required by Title IX,
+          UWA prohibits sex discrimination in any education program or activity
+          that it operates. Individuals may report concerns or questions to
+          UWA’s Assistant Vice President and Senior Title IX Coordinator. The
+          Title IX notice of nondiscrimination is located at
+          <a href="https://www.uwa.edu/title-ix/">uwa.edu/title-ix/</a>.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
