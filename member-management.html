@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz" />
+    <title>Manage Members | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="site.css?v=portfolio-widget" />
+    <script src="site.js" defer></script>
+    <script src="member-management.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+      <div class="brand">
+        <p class="brand-title">Red &amp; White Fund</p>
+        <img class="brand-mark" src="assets/uwacollegeofbusiness.png" alt="College of Business" />
+      </div>
+    </header>
+    <main>
+      <section class="hero"><div class="hero-content"><h1>Manage Members</h1></div></section>
+      <section class="page-content login-page" aria-labelledby="create-member-heading">
+        <form class="login-panel" data-create-member-form>
+          <h2 id="create-member-heading">Create Member Account</h2>
+          <p>Create a regular member account. University SSO will replace this temporary password flow.</p>
+          <label class="login-field" for="member-email">Email Address<input id="member-email" name="email" type="email" autocomplete="email" required /></label>
+          <label class="login-field" for="member-password">Temporary Password<input id="member-password" name="password" type="password" autocomplete="new-password" minlength="12" required /></label>
+          <button class="login-submit" type="submit">Create Account</button>
+          <p class="dashboard-error" data-member-message role="alert" hidden></p>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

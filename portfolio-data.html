@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz" />
+    <title>Portfolio Details | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="site.css?v=portfolio-widget" />
+    <script src="site.js" defer></script>
+    <script src="paperdashboard.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+      <div class="brand">
+        <p class="brand-title">Red &amp; White Fund</p>
+        <img class="brand-mark" src="assets/uwacollegeofbusiness.png" alt="College of Business" />
+      </div>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="leadership.html">Leadership</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="publications.html">Publications</a></li>
+          <li><a href="portfolio.html">Portfolio</a></li>
+          <li><a href="media.html">Media</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="hero paper-dashboard-hero">
+        <div class="hero-content"><h1>Portfolio Details</h1></div>
+      </section>
+      <section class="page-content paper-dashboard" aria-labelledby="portfolio-details-heading">
+        <div class="dashboard-heading">
+          <div>
+            <h2 id="portfolio-details-heading">Paper Portfolio Details</h2>
+            <p>Live paper-account balances, positions, and recent orders from Alpaca.</p>
+          </div>
+          <p class="dashboard-status" data-dashboard-status aria-live="polite">Connecting to portfolio stream&hellip;</p>
+        </div>
+        <p class="dashboard-error" data-dashboard-error role="alert" hidden></p>
+        <section aria-label="Paper account summary">
+          <div class="account-metrics">
+            <article class="account-metric"><h3>Portfolio Value</h3><p data-account-portfolio-value>&mdash;</p></article>
+            <article class="account-metric"><h3>Equity</h3><p data-account-equity>&mdash;</p></article>
+            <article class="account-metric"><h3>Cash</h3><p data-account-cash>&mdash;</p></article>
+            <article class="account-metric"><h3>Buying Power</h3><p data-account-buying-power>&mdash;</p></article>
+            <article class="account-metric"><h3>Day Change</h3><p data-account-day-change>&mdash;</p></article>
+            <article class="account-metric"><h3>Long Value</h3><p data-account-long-market-value>&mdash;</p></article>
+            <article class="account-metric"><h3>Short Value</h3><p data-account-short-market-value>&mdash;</p></article>
+            <article class="account-metric"><h3>Maintenance Margin</h3><p data-account-maintenance-margin>&mdash;</p></article>
+          </div>
+        </section>
+        <div class="dashboard-grid">
+          <section class="dashboard-panel" aria-labelledby="positions-heading">
+            <div class="dashboard-panel-heading"><h3 id="positions-heading">Open Positions</h3><span data-position-count>Waiting for data</span></div>
+            <div class="dashboard-table-wrap">
+              <table>
+                <thead><tr><th scope="col">Symbol</th><th scope="col">Side</th><th scope="col">Quantity</th><th scope="col">Price</th><th scope="col">Market Value</th><th scope="col">Unrealized P/L</th><th scope="col">Today</th></tr></thead>
+                <tbody data-positions><tr><td colspan="7">Waiting for portfolio data.</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="dashboard-panel" aria-labelledby="orders-heading">
+            <div class="dashboard-panel-heading"><h3 id="orders-heading">Recent Orders</h3><span>Latest 10</span></div>
+            <div class="dashboard-table-wrap">
+              <table>
+                <thead><tr><th scope="col">Symbol</th><th scope="col">Side</th><th scope="col">Type</th><th scope="col">Quantity</th><th scope="col">Filled</th><th scope="col">Status</th><th scope="col">Submitted</th></tr></thead>
+                <tbody data-orders><tr><td colspan="7">Waiting for portfolio data.</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-main">
+        <p class="footer-wordmark">UWA The University of West Alabama</p>
+        <ul class="footer-links">
+          <li><a href="login.html">Login</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="terms.html">Terms of Use</a></li>
+          <li><a href="index.html">&copy; 2026 The University of West Alabama</a></li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>

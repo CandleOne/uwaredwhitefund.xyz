@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz" />
+    <title>Paper Dashboard | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="site.css?v=portfolio-widget" />
+    <script src="site.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+      <div class="brand">
+        <p class="brand-title">Red &amp; White Fund</p>
+        <img class="brand-mark" src="assets/uwacollegeofbusiness.png" alt="College of Business" />
+      </div>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="leadership.html">Leadership</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="publications.html">Publications</a></li>
+          <li><a href="portfolio.html">Portfolio</a></li>
+          <li><a href="media.html">Media</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="hero paper-dashboard-hero">
+        <div class="hero-content">
+          <h1>Paper Dashboard</h1>
+        </div>
+      </section>
+      <section class="page-content paper-dashboard" aria-labelledby="paper-dashboard-heading">
+        <div class="dashboard-heading">
+          <div>
+            <h2 id="paper-dashboard-heading">Paper Portfolio</h2>
+            <p>View a live summary of the Fund's Alpaca paper account.</p>
+          </div>
+          <div class="member-session-status" data-member-session hidden>
+            <span data-member-identity></span>
+            <a href="live-trading.html" data-live-trading hidden>Switch to live</a>
+            <a href="algorithmic-research.html" data-algorithmic-research hidden>Algorithmic research</a>
+            <a href="member-management.html" data-member-management hidden>Manage members</a>
+            <a href="settings.html" data-member-settings hidden>Settings</a>
+            <button type="button" data-member-logout>Sign out</button>
+          </div>
+        </div>
+        <div class="portfolio-widget-grid" data-portfolio-cards>
+          <article class="linked-portfolio-card" data-default-client-card>
+            <a class="portfolio-summary-widget" data-portfolio-details href="portfolio-data.html" aria-describedby="portfolio-widget-instruction">
+              <span class="portfolio-summary-widget-title">Client</span>
+              <span class="portfolio-summary-widget-metric"><span>Value</span><strong data-widget-portfolio-value>&mdash;</strong></span>
+              <span class="portfolio-summary-widget-metric"><span>Cash</span><strong data-widget-cash>&mdash;</strong></span>
+              <span class="portfolio-summary-widget-metric"><span>Day Change</span><strong data-widget-day-change>&mdash;</strong></span>
+            </a>
+            <button class="unlink-portfolio-button" type="button" data-unlink-shared-portfolio hidden>Unlink shared Client</button>
+          </article>
+          <a class="portfolio-link-widget" data-link-portfolio href="portfolio-link.html">
+            <span>Link portfolio</span>
+            <small>Connect your Alpaca paper account</small>
+          </a>
+        </div>
+        <p class="portfolio-widget-instruction" id="portfolio-widget-instruction">Select the widget to view full portfolio details.</p>
+        <p class="dashboard-error" data-dashboard-error role="alert" hidden></p>
+        <aside class="alpaca-signup" aria-labelledby="alpaca-signup-heading">
+          <h3 id="alpaca-signup-heading">Create your Alpaca Markets account</h3>
+          <p>
+            Sign up on Alpaca's website, complete the account setup steps, and
+            open the Paper Trading dashboard to get started.
+          </p>
+          <ol>
+            <li>Visit Alpaca using the button below and create your account.</li>
+            <li>Follow Alpaca's instructions to verify your email and finish setup.</li>
+            <li>Select Paper Trading in Alpaca to practice with simulated funds.</li>
+          </ol>
+          <a class="apply-button" href="https://app.alpaca.markets/signup" target="_blank" rel="noopener noreferrer">
+            Create an Alpaca Account
+          </a>
+          <p class="alpaca-signup-note">
+            Opens Alpaca's website in a new tab. Account setup takes place on
+            Alpaca, not on this site. Never share your password or API secret keys.
+          </p>
+        </aside>
+        <p class="paper-disclaimer">
+          Paper trading is a simulation and does not use real money. Simulated
+          results do not guarantee future investment performance.
+        </p>
+      </section>
+    </main>
+    <script src="portfolio-widget.js" defer></script>
+    <footer class="site-footer">
+      <div class="footer-main">
+        <p class="footer-wordmark">UWA The University of West Alabama</p>
+        <ul class="footer-links">
+          <li><a href="login.html">Login</a></li>
+          <li><a href="privacy.html">Privacy</a></li>
+          <li><a href="terms.html">Terms of Use</a></li>
+          <li><a href="index.html">&copy; 2026 The University of West Alabama</a></li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>

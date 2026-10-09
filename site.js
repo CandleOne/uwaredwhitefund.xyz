@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	menuButton.innerHTML = '<span></span><span></span><span></span>';
 
 	const menu = navigation.querySelector(".nav-list");
+
 	menu.id = "primary-menu";
 	navigation.before(menuButton);
 

@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz" />
     <title>Member Login | Red &amp; White Fund</title>
     <link rel="stylesheet" href="site.css" />
     <script src="site.js" defer></script>
@@ -33,15 +34,17 @@
         </div>
       </section>
       <section class="page-content login-page" aria-labelledby="login-heading">
-        <form class="login-panel" action="#" method="post">
-          <h2 id="login-heading">Placeholder Sign In</h2>
-          <p>To be replaced with SSO.</p>
+        <form class="login-panel" data-auth-form>
+          <h2 id="login-heading" data-auth-heading>Member Sign In</h2>
+          <p>Temporary member access. University SSO will replace this sign-in flow.</p>
           <label class="login-field" for="email">Email Address<input id="email" name="email" type="email" autocomplete="username" required /></label>
-          <label class="login-field" for="password">Password<input id="password" name="password" type="password" autocomplete="current-password" required /></label>
+          <label class="login-field" for="password">Password<input id="password" name="password" type="password" autocomplete="current-password new-password" minlength="12" required /></label>
           <button class="login-submit" type="submit">Login</button>
+          <p class="dashboard-error" data-auth-message role="alert" hidden></p>
         </form>
       </section>
     </main>
+    <script src="auth.js" defer></script>
     <footer class="site-footer">
       <div class="footer-main">
         <p class="footer-wordmark">UWA The University of West Alabama</p>

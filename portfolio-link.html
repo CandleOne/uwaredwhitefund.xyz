@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz" />
+    <title>Link Portfolio | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="site.css?v=portfolio-widget" />
+    <script src="site.js" defer></script>
+    <script src="portfolio-link.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header"><div class="brand"><p class="brand-title">Red &amp; White Fund</p><img class="brand-mark" src="assets/uwacollegeofbusiness.png" alt="College of Business" /></div></header>
+    <main>
+      <section class="hero"><div class="hero-content"><h1>Link Portfolio</h1></div></section>
+      <section class="page-content login-page" aria-labelledby="link-heading">
+        <form class="login-panel" data-portfolio-link-form>
+          <h2 id="link-heading">Connect Alpaca Paper Trading</h2>
+          <p>Credentials are encrypted before storage and are used only to retrieve your paper portfolio.</p>
+          <label class="login-field" for="label">Portfolio Name<input id="label" name="label" maxlength="40" required /></label>
+          <label class="login-field" for="api_key">Paper API Key<input id="api_key" name="api_key" autocomplete="off" required /></label>
+          <label class="login-field" for="api_secret">Paper API Secret<input id="api_secret" name="api_secret" type="password" autocomplete="new-password" required /></label>
+          <button class="login-submit" type="submit">Link Portfolio</button>
+          <p class="dashboard-error" data-link-message role="alert" hidden></p>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
