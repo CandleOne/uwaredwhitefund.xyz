@@ -171,7 +171,7 @@ async function loadLinkedPortfolios() {
           const payload = await logoutResponse.json();
           throw new Error(payload.error || "Unable to sign out.");
         }
-        window.location.reload();
+        window.location.assign("index.html");
       } catch (error) {
         setError(error.message);
         console.error("Unable to sign out:", error);
