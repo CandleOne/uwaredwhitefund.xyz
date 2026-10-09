@@ -39,12 +39,13 @@
           <p>Temporary member access. University SSO will replace this sign-in flow.</p>
           <label class="login-field" for="email">Email Address<input id="email" name="email" type="email" autocomplete="username" required /></label>
           <label class="login-field" for="password">Password<input id="password" name="password" type="password" autocomplete="current-password new-password" minlength="12" required /></label>
-          <button class="login-submit" type="submit">Login</button>
+          <button class="login-submit" type="submit" disabled>Login</button>
+          <noscript><p class="dashboard-error">JavaScript is required to sign in.</p></noscript>
           <p class="dashboard-error" data-auth-message role="alert" hidden></p>
         </form>
       </section>
     </main>
-    <script src="auth.js" defer></script>
+    <script src="auth.js?v=fly-login-20261009" defer></script>
     <footer class="site-footer">
       <div class="footer-main">
         <p class="footer-wordmark">UWA The University of West Alabama</p>

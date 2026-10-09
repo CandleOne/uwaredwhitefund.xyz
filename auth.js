@@ -2,7 +2,7 @@ const previewApiBaseUrl = new URLSearchParams(window.location.search).get("apiBa
 const localApiBaseUrl = ["127.0.0.1", "localhost"].includes(window.location.hostname)
   ? `${window.location.protocol}//${window.location.hostname}:8789`
   : undefined;
-const apiBaseUrl = (previewApiBaseUrl || localApiBaseUrl || document.querySelector('meta[name="alpaca-api-base"]')?.content).replace(/\/$/, "");
+const apiBaseUrl = (previewApiBaseUrl || localApiBaseUrl || document.querySelector('meta[name="alpaca-api-base"]')?.content || "").replace(/\/$/, "");
 const form = document.querySelector("[data-auth-form]");
 const heading = document.querySelector("[data-auth-heading]");
 const message = document.querySelector("[data-auth-message]");
@@ -23,12 +23,15 @@ function renderMode() {
 
 async function initialize() {
   try {
+    if (!apiBaseUrl) throw new Error("The member service URL has not been configured.");
     const response = await fetch(`${apiBaseUrl}/v1/auth/status`, { credentials: "include" });
     if (!response.ok) throw new Error(`Status request failed with ${response.status}.`);
     const status = await response.json();
+    if (typeof status.csrf_token !== "string" || !status.csrf_token) throw new Error("The member service did not return a CSRF token.");
     csrfToken = status.csrf_token;
     setupRequired = status.setup_required;
     renderMode();
+    submitButton.disabled = false;
     if (status.authenticated) showMessage(`Signed in as ${status.user.email}.`);
   } catch (error) {
     showMessage("The member service is unavailable.", true);
@@ -38,6 +41,10 @@ async function initialize() {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!csrfToken) {
+    showMessage("The member service is not ready. Reload the page to try again.", true);
+    return;
+  }
   const formData = new FormData(form);
   try {
     const response = await fetch(`${apiBaseUrl}/v1/auth/${setupRequired ? "setup" : "login"}`, {
