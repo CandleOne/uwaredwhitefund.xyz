@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import click
 from alpaca.common.exceptions import APIError
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import QueryOrderStatus
@@ -31,6 +32,7 @@ class Settings:
     database_path: Path
     encryption_key: bytes
     session_secret: str
+    allow_manager_setup: bool = True
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -53,6 +55,7 @@ class Settings:
             database_path=Path(os.environ.get("PORTFOLIO_DATABASE_PATH", PROJECT_ROOT / "instance" / "portfolio.db")),
             encryption_key=required["ALPACA_CREDENTIAL_ENCRYPTION_KEY"].encode("ascii"),
             session_secret=required["APP_SESSION_SECRET"],
+            allow_manager_setup=os.environ.get("ALLOW_MANAGER_SETUP", "true").lower() == "true",
         )
 
 
@@ -151,6 +154,29 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     initialize_database()
 
+    @app.cli.command("create-manager")
+    @click.option("--email", prompt=True)
+    @click.password_option()
+    def create_manager(email: str, password: str) -> None:
+        email = email.strip().lower()
+        if not email or len(password) < 12:
+            raise click.ClickException("An email and a password of at least 12 characters are required.")
+        connection = database()
+        connection.execute("BEGIN IMMEDIATE")
+        if connection.execute("SELECT 1 FROM users LIMIT 1").fetchone() is not None:
+            raise click.ClickException("The initial account has already been created.")
+        connection.execute(
+            "INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'manager')",
+            (email, generate_password_hash(password)),
+        )
+        connection.commit()
+        click.echo("Manager account created.")
+
+    @app.get("/healthz")
+    def health() -> Response:
+        database().execute("SELECT 1").fetchone()
+        return jsonify(status="ok")
+
     @app.after_request
     def add_cors_headers(response: Response) -> Response:
         if request.headers.get("Origin") == settings.allowed_origin:
@@ -216,7 +242,8 @@ def create_app(settings: Settings | None = None) -> Flask:
         user = current_user()
         return jsonify(
             authenticated=user is not None,
-            setup_required=database().execute("SELECT 1 FROM users LIMIT 1").fetchone() is None,
+            setup_required=settings.allow_manager_setup
+            and database().execute("SELECT 1 FROM users LIMIT 1").fetchone() is None,
             default_portfolio_enabled=default_portfolio_enabled(),
             user=None if user is None else {"email": user["email"], "role": user["role"]},
             csrf_token=csrf_token(),
@@ -227,6 +254,8 @@ def create_app(settings: Settings | None = None) -> Flask:
         csrf_error = validate_csrf()
         if csrf_error:
             return csrf_error
+        if not settings.allow_manager_setup:
+            return jsonify(error="Manager setup is only available through the server console."), 403
         if database().execute("SELECT 1 FROM users LIMIT 1").fetchone() is not None:
             return jsonify(error="The manager account has already been created."), 409
         values, error = read_json(("email", "password"))
