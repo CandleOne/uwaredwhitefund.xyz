@@ -1,0 +1,7 @@
+name = "alpaca-paper-dashboard"
+main = "src/index.js"
+compatibility_date = "2026-10-07"
+
+# Set this to the exact HTTPS origin that serves paperdashboard.html.
+[vars]
+ALLOWED_ORIGIN = "https://uwaredwhitefund.xyz"
