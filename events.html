@@ -1,55 +1,51 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>Events - Delta Chi of Livingston</title>
-        <meta name="description" content="Stay updated with upcoming Delta Chi events, social gatherings, and brotherhood activities.">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="eventstyles.css">
-    </head>
-    <body>
-    <header>
-        <div class="header-content">
-            <div class="header-logo">
-                <img src="assets/Logo-single-color.png" alt="Delta Chi Logo">
-            </div>
-		<nav aria-label="Primary navigation">
-			<ul class="nav-list">
-				<li><a href="index.html" aria-current="page">Home</a></li>
-				<li><a href="about.html">About</a></li>
-				<li><a href="events.html">Events</a></li>
-				<li><a href="leadership.html">Leadership</a></li>
-				<li><a href="contact.html">Contact</a></li>
-				<li><a href="publications.html">Publications</a></li>
-				<li><a href="portfolio.html">Portfolio</a></li>
-				<li><a href="media.html">Media</a></li>
-			</ul>
-		</nav>
-            </div>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Explore upcoming Red & White Fund events, gatherings, and campus activities.">
+    <title>Events | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="site.css">
+    <link rel="stylesheet" href="eventstyles.css">
+    <script src="site.js" defer></script>
+</head>
+<body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+        <div class="brand">
+            <p class="brand-title">Red &amp; White Fund</p>
+            <img class="brand-mark" src="assets/uwacollegeofbusiness.png" alt="College of Business">
         </div>
+        <nav aria-label="Primary navigation">
+            <ul class="nav-list">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="events.html" aria-current="page">Events</a></li>
+                <li><a href="leadership.html">Leadership</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="publications.html">Publications</a></li>
+                <li><a href="portfolio.html">Portfolio</a></li>
+                <li><a href="media.html">Media</a></li>
+            </ul>
+        </nav>
     </header>
 
-    <div class="content">
-        <!-- Page Header -->
-        <div class="Landing-Page" style="background-image: url('assets/IMG_2846.png');">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 0, 0, 0.3);"></div>
-            <div class="overlay">
-                <h1>Upcoming Events</h1>
-                <h3>Join us for brotherhood activities, social events, and community service opportunities.</h3>
+    <main>
+        <section class="hero" aria-labelledby="events-heading">
+            <div class="hero-content">
+                <p class="hero-kicker">Red &amp; White Fund</p>
+                <h1 id="events-heading">Upcoming Events</h1>
             </div>
-        </div>
+        </section>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="content-container">
+        <div class="page-content events-page">
                 
                 <!-- Season Pass Section -->
-                <section class="season-pass-section" style="background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%); color: white; padding: 40px; border-radius: 15px; margin-bottom: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                    <h2 style="color: rgb(0, 0, 0); margin-bottom: 15px; font-size: 2rem;">2026 Social Event Season Pass</h2>
-                    <p style="color: black; font-size: 1.2rem; margin-bottom: 10px; opacity: 0.95;">Get unlimited access to all social events this semester and avoid the lines</p>
-                    <p style="color: black; font-size: 1.5rem; font-weight: 700; margin-bottom: 20px;">$30 - Best Value!</p>
-                    <button id="season-pass-btn" style="background: white; color: #6b1c14; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">Purchase Season Pass</button>
+                <section class="season-pass-section" aria-labelledby="season-pass-heading">
+                    <h2 id="season-pass-heading">2026 Social Event Season Pass</h2>
+                    <p>Get unlimited access to all social events this semester and avoid the lines.</p>
+                    <p class="season-pass-price">$30 <span>Best Value</span></p>
+                    <button id="season-pass-btn" class="apply-button" type="button">Purchase Season Pass</button>
                 </section>
 
                 <!-- Social Events Section (Movie Library Style) -->
@@ -69,7 +65,7 @@
                     <div class="library-grid" id="libraryGrid">
                         <!-- Poster: Bingo Night -->
                         <div class="poster-card" data-category="parties" data-favorite="true" title="Bingo Night">
-                            <div class="poster-img-wrapper" style="min-height:260px;">
+                            <div class="poster-img-wrapper">
                                 <span class="poster-favorite">★</span>
                                 <span class="poster-badge">Nov 13</span>
                                 <img class="poster-img" src="assets/bnigonight.jpg" alt="Bingo Night Poster">
@@ -82,7 +78,7 @@
                         
                         <!-- Poster: Dukes & Boots -->
                         <div class="poster-card" data-category="parties" data-favorite="true" title="Dukes & Boots">
-                            <div class="poster-img-wrapper" style="min-height:260px;">
+                            <div class="poster-img-wrapper">
                                 <span class="poster-favorite">★</span>
                                 <span class="poster-badge">Nov 15</span>
                                 <img class="poster-img" src="assets/dukesandboots.png" alt="Dukes & Boots Poster">
@@ -95,7 +91,7 @@
                         
                         <!-- Poster: Christmas Caroling -->
                         <div class="poster-card" data-category="parties" data-favorite="true" title="Christmas Caroling">
-                            <div class="poster-img-wrapper" style="min-height:260px;">
+                            <div class="poster-img-wrapper">
                                 <span class="poster-favorite">★</span>
                                 <span class="poster-badge">Nov 21, Dec 5</span>
                                 <img class="poster-img" src="assets/carolingdec2025.png" alt="Christmas Caroling Poster">
@@ -182,10 +178,10 @@
                 </section>
             </div>
         </div>
-    </div>
+    </main>
 
-    <div class="footer">
-        <div class="footer-content">
+    <footer class="site-footer">
+        <div class="footer-main">
             <div class="footer-logo">
                 <img src="assets/dchishield.png" alt="Delta Chi Shield" class="footer-shield">
             </div>
@@ -211,9 +207,16 @@
                     </svg>
                 </a>
             </div>
-            <p>&copy; 2025 Delta Chi. All rights reserved.</p>
+            <p class="footer-wordmark">UWA The University of West Alabama</p>
+            <ul class="footer-links">
+                <li><a href="login.html">Login</a></li>
+                <li><a href="https://www.uwa.edu/privacy/">Privacy</a></li>
+                <li><a href="https://policies.uwa.edu/hc/en-us/articles/21834065539351-UWA-Acceptable-Use-Policy">Terms of Use</a></li>
+                <li><a>© 2026 The University of West Alabama</a></li>
+            </ul>
+            <p class="footer-note">UWA is an Equal Employment/Equal Educational Opportunity Institution dedicated to providing equal opportunities and equal access to all individuals regardless of race, color, religion, ethnic or national origin, sex (including pregnancy), genetic information, age, disability, religion, and veteran’s status. As required by Title IX, UWA prohibits sex discrimination in any education program or activity that it operates. Individuals may report concerns or questions to UWA’s Assistant Vice President and Senior Title IX Coordinator. The Title IX notice of nondiscrimination is located at <a href="https://www.uwa.edu/title-ix/">uwa.edu/title-ix/</a>.</p>
         </div>
-    </div>
+    </footer>
     <script src="https://js.stripe.com/v3"></script>
     <script>
         (function initSeasonPassCheckout(){
