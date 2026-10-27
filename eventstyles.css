@@ -137,11 +137,7 @@
     object-fit: cover;
 }
 
-.poster-aux {
-    right: 12px;
-    top: auto;
-    bottom: 12px;
-}
+.poster-aux,
 .poster-badge {
     position: absolute;
     top: 12px;
