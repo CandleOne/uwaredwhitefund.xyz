@@ -154,6 +154,7 @@
     top: auto;
     right: 12px;
     bottom: 12px;
+    text-decoration: none;
 }
 .poster-badge { left: 12px; }
 
