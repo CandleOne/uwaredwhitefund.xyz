@@ -4,10 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Explore upcoming Red & White Fund events, gatherings, and campus activities.">
+    <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz">
     <title>Events | Red &amp; White Fund</title>
     <link rel="stylesheet" href="site.css">
     <link rel="stylesheet" href="eventstyles.css">
     <script src="site.js" defer></script>
+    <script src="event-library.js" defer></script>
 </head>
 <body>
     <div class="utility-bar">UWA The University of West Alabama</div>
@@ -39,58 +41,21 @@
         </section>
 
         <div class="page-content events-page">
-                    <div class="library-grid" id="libraryGrid">
+            <section class="library-section" aria-labelledby="library-heading">
+                <h2 class="library-title" id="library-heading">Event Library</h2>
+                <div class="library-grid" id="libraryGrid" aria-live="polite">
+                    <p class="event-library-status" data-event-library-status>Loading events…</p>
+                </div>
+            </section>
 
-                        <div class="poster-card" data-category="parties" data-favorite="true" title="Bingo Night">
-                            <div class="poster-img-wrapper">
-                                <span class="poster-aux"><a href="icomps/ccomp.html">Register</a></span>
-                                <span class="poster-badge">Registration Closes Nov 8th</span>
-                                <img class="poster-img" src="assets/icomps/placeholder.jpg" alt="">
-                            </div>
-                            <div class="poster-info">
-                                <p class="poster-title">Red&White Investment Competition</p>
-                                <p class="poster-meta">6:00 PM • Wallace Bridges Auditorium • $5 entry fee</p>
-                            </div>
-                        </div>
-                        
-
-                        <div class="poster-card" data-category="parties" data-favorite="true" title="Bingo Night">
-                            <div class="poster-img-wrapper">
-                                <span class="poster-aux"><a href="icomps/ccomp.html">Register</a></span>
-                                <span class="poster-badge">Registration Closes Nov 8th</span>
-                                <img class="poster-img" src="assets/icomps/placeholder.jpg" alt="">
-                            </div>
-                            <div class="poster-info">
-                                <p class="poster-title">Red&White Investment Competition</p>
-                                <p class="poster-meta">6:00 PM • Wallace Bridges Auditorium • $5 entry fee</p>
-                            </div>
-                        </div>
-                        
-
-                        <div class="poster-card" data-category="parties" data-favorite="true" title="Bingo Night">
-                            <div class="poster-img-wrapper">
-                                <span class="poster-aux"><a href="icomps/ccomp.html">Register</a></span>
-                                <span class="poster-badge">Registration Closes Nov 8th</span>
-                                <img class="poster-img" src="assets/icomps/placeholder.jpg" alt="">
-                            </div>
-                            <div class="poster-info">
-                                <p class="poster-title">Red&White Investment Competition</p>
-                                <p class="poster-meta">6:00 PM • Wallace Bridges Auditorium • $5 entry fee</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Contact Section -->
-                <section class="contact-section">
-                    <h2>Questions About Events?</h2>
-                    <p>Contact our Chief Marketing Officer for more information about upcoming events and activities.</p>
-                    <div class="contact-info">
-                        <a href="mailto:social@deltachilivin.org" class="contact-btn">Contact Chief Marketing Officer</a>
-                        <a href="#" class="contact-btn secondary">View Full Event Calendar</a>
-                    </div>
-                </section>
-            </div>
+            <section class="contact-section">
+                <h2>Questions About Events?</h2>
+                <p>Contact our Chief Marketing Officer for more information about upcoming events and activities.</p>
+                <div class="contact-info">
+                    <a href="mailto:social@deltachilivin.org" class="contact-btn">Contact Chief Marketing Officer</a>
+                    <a href="#" class="contact-btn secondary">View Full Event Calendar</a>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -178,30 +143,6 @@
             }
         })();
 
-        // Movie library tab filtering
-        (function initLibraryFilters(){
-            const tabs = document.querySelectorAll('.library-tab');
-            const cards = document.querySelectorAll('.poster-card');
-            if (!tabs.length || !cards.length) return;
-            function applyFilter(key){
-                cards.forEach(card => {
-                    const cat = card.getAttribute('data-category');
-                    const fav = card.getAttribute('data-favorite') === 'true';
-                    let show = true;
-                    if (key === 'favorites') show = fav;
-                    else if (key !== 'all') show = (cat === key);
-                    card.setAttribute('data-hidden', show ? 'false' : 'true');
-                });
-            }
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    applyFilter(tab.dataset.filter);
-                });
-            });
-            applyFilter('all');
-        })();
     </script>
     </body>
 </html>

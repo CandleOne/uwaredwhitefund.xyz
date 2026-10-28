@@ -73,6 +73,15 @@ class MemberServiceTest(unittest.TestCase):
         self.assertEqual(response.headers["Access-Control-Allow-Origin"], self.settings.allowed_origin)
         self.assertEqual(response.headers["Access-Control-Allow-Credentials"], "true")
         self.assertIn("X-CSRF-Token", response.headers["Access-Control-Allow-Headers"])
+        event_preflight = self.client.options(
+            "/v1/events/1",
+            headers={
+                **self.origin,
+                "Access-Control-Request-Method": "DELETE",
+            },
+        )
+        self.assertEqual(event_preflight.status_code, 204)
+        self.assertIn("DELETE", event_preflight.headers["Access-Control-Allow-Methods"])
         response = self.client.get("/v1/auth/status", headers={"Origin": "https://untrusted.example"})
         self.assertNotIn("Access-Control-Allow-Origin", response.headers)
         self.assertEqual(self.post("/v1/auth/login", "invalid").status_code, 403)
@@ -98,6 +107,81 @@ class MemberServiceTest(unittest.TestCase):
         self.assertNotEqual(result.exit_code, 0)
         response = self.post("/v1/auth/login", self.status().json["csrf_token"], credentials)
         self.assertEqual(response.status_code, 200)
+
+    def test_manager_can_add_and_remove_public_events(self):
+        anonymous = self.app.test_client()
+        public_events = anonymous.get("/v1/events")
+        self.assertEqual(public_events.status_code, 200)
+        self.assertEqual(len(public_events.json["events"]), 3)
+        self.assertEqual(
+            self.post("/v1/events", self.status().json["csrf_token"], {
+                "title": "Public Event",
+                "details": "Tuesday at 6 PM",
+                "image_url": "assets/event.jpg",
+            }).status_code,
+            401,
+        )
+
+        token = self.status().json["csrf_token"]
+        self.assertEqual(
+            self.post(
+                "/v1/auth/setup",
+                token,
+                {"email": "manager@example.com", "password": "test-password-123"},
+            ).status_code,
+            201,
+        )
+        token = self.status().json["csrf_token"]
+        created = self.post(
+            "/v1/events",
+            token,
+            {
+                "title": "Public Event",
+                "details": "Tuesday at 6 PM",
+                "image_url": "assets/event.jpg",
+                "badge": "",
+                "link_label": "Register",
+                "link_url": "https://events.example.com/register",
+            },
+        )
+        self.assertEqual(created.status_code, 201)
+        event_id = created.json["event"]["id"]
+        self.assertEqual(len(anonymous.get("/v1/events").json["events"]), 4)
+        self.assertEqual(
+            self.client.delete(f"/v1/events/{event_id}").status_code,
+            403,
+        )
+        deleted = self.client.delete(
+            f"/v1/events/{event_id}",
+            headers={**self.origin, "X-CSRF-Token": token},
+        )
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual(len(anonymous.get("/v1/events").json["events"]), 3)
+
+        restarted = create_app(self.settings).test_client()
+        self.assertEqual(len(restarted.get("/v1/events").json["events"]), 3)
+
+    def test_event_creation_rejects_unsafe_urls_and_incomplete_links(self):
+        token = self.status().json["csrf_token"]
+        self.post(
+            "/v1/auth/setup",
+            token,
+            {"email": "manager@example.com", "password": "test-password-123"},
+        )
+        token = self.status().json["csrf_token"]
+        payload = {
+            "title": "Public Event",
+            "details": "Tuesday at 6 PM",
+            "image_url": "javascript:alert(1)",
+        }
+        response = self.post("/v1/events", token, payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("HTTPS URL", response.json["error"])
+        payload["image_url"] = "assets/event.jpg"
+        payload["link_label"] = "Register"
+        response = self.post("/v1/events", token, payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("both a link label and a link URL", response.json["error"])
 
     @patch("member_portfolio_service.TradingClient")
     def test_linked_and_default_portfolio_streams(self, trading_client):

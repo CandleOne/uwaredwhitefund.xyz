@@ -1,11 +1,14 @@
 # uwaredwhitefund.xyz
 
 The HTML/CSS/JS site can stay on its current static host. Login, member
-management, encrypted portfolio credentials, and portfolio streams require
-`member_portfolio_service.py` on a Python host. Static hosting cannot run these
-endpoints. The separate `alpaca_portfolio_stream.py` and old Cloudflare Worker
-are not needed for this deployment: the member service also serves the shared
-paper dashboard at `/v1/dashboard/stream`.
+management, the manager-only event library editor, encrypted portfolio
+credentials, and portfolio streams require `member_portfolio_service.py` on a
+Python host. Static hosting cannot run these endpoints. Events are stored in
+the service's SQLite database, publicly listed at `/v1/events`, and can be
+added or removed from the manager's Manage Members page. The separate
+`alpaca_portfolio_stream.py` and old Cloudflare Worker are not needed for this
+deployment: the member service also serves the shared paper dashboard at
+`/v1/dashboard/stream`.
 
 ## Deploy the API to Fly.io
 
@@ -85,9 +88,10 @@ different name in `fly.toml` before creating the app.
    website and `Access-Control-Allow-Credentials: true`.
 
 5. Open `https://uwaredwhitefund.xyz/login.html`, sign in with the provisioned
-   manager, create a member account, and link a paper portfolio. Verify that
-   its dashboard updates and logout ends the session. Existing pages already
-   use `https://api.uwaredwhitefund.xyz`, so no frontend URL changes are needed.
+   manager, create a member account, and add or remove events from Manage
+   Members. Link a paper portfolio and verify its dashboard updates and logout
+   ends the session. Existing pages already use
+   `https://api.uwaredwhitefund.xyz`, so no frontend URL changes are needed.
 
 ### Deployment constraints
 

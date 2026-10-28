@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import click
 from alpaca.common.exceptions import APIError
@@ -24,6 +25,33 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 load_dotenv(PROJECT_ROOT / ".env")
+
+INITIAL_EVENTS = (
+    {
+        "title": "Red&White Investment Competition",
+        "details": "6:00 PM • Wallace Bridges Auditorium • $5 entry fee",
+        "image_url": "assets/icomps/placeholder.jpg",
+        "badge": "Registration Closes Nov 8th",
+        "link_label": "Register",
+        "link_url": "icomps/ccomp.html",
+    },
+    {
+        "title": "Red&White Investment Competition",
+        "details": "6:00 PM • Wallace Bridges Auditorium • $5 entry fee",
+        "image_url": "assets/icomps/placeholder.jpg",
+        "badge": "Registration Closes Nov 8th",
+        "link_label": "Register",
+        "link_url": "icomps/ccomp.html",
+    },
+    {
+        "title": "Red&White Investment Competition",
+        "details": "6:00 PM • Wallace Bridges Auditorium • $5 entry fee",
+        "image_url": "assets/icomps/placeholder.jpg",
+        "badge": "Registration Closes Nov 8th",
+        "link_label": "Register",
+        "link_url": "icomps/ccomp.html",
+    },
+)
 
 
 @dataclass(frozen=True)
@@ -144,10 +172,34 @@ def create_app(settings: Settings | None = None) -> Flask:
                     setting_key TEXT PRIMARY KEY,
                     setting_value TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS events (
+                    id INTEGER PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    details TEXT NOT NULL,
+                    image_url TEXT NOT NULL,
+                    badge TEXT NOT NULL DEFAULT '',
+                    link_label TEXT NOT NULL DEFAULT '',
+                    link_url TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
                 INSERT OR IGNORE INTO application_settings (setting_key, setting_value)
                     VALUES ('default_portfolio_enabled', 'true');
                 """
             )
+            connection.execute("BEGIN IMMEDIATE")
+            seed_marker = connection.execute(
+                "SELECT 1 FROM application_settings WHERE setting_key = 'event_library_seeded'"
+            ).fetchone()
+            if seed_marker is None:
+                connection.executemany(
+                    """INSERT INTO events (title, details, image_url, badge, link_label, link_url)
+                       VALUES (:title, :details, :image_url, :badge, :link_label, :link_url)""",
+                    INITIAL_EVENTS,
+                )
+                connection.execute(
+                    """INSERT INTO application_settings (setting_key, setting_value)
+                       VALUES ('event_library_seeded', 'true')"""
+                )
             connection.commit()
         finally:
             connection.close()
@@ -190,9 +242,11 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     @app.route("/v1/auth", methods=["OPTIONS"])
     @app.route("/v1/portfolios", methods=["OPTIONS"])
-    def options() -> Response:
+    @app.route("/v1/events", methods=["OPTIONS"])
+    @app.route("/v1/events/<int:event_id>", methods=["OPTIONS"])
+    def options(event_id: int | None = None) -> Response:
         response = Response(status=204)
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token"
         return response
 
@@ -323,6 +377,79 @@ def create_app(settings: Settings | None = None) -> Flask:
         except sqlite3.IntegrityError:
             return jsonify(error="A member with that email already exists."), 409
         return jsonify(message="Member account created."), 201
+
+    def safe_event_url(value: str) -> bool:
+        if "\\" in value or any(ord(character) < 32 for character in value):
+            return False
+        try:
+            parsed = urlsplit(value)
+        except ValueError:
+            return False
+        if parsed.scheme:
+            return parsed.scheme == "https" and bool(parsed.netloc)
+        return not parsed.netloc and not value.startswith(("//", "\\"))
+
+    @app.get("/v1/events")
+    def list_events() -> Response:
+        rows = database().execute(
+            """SELECT id, title, details, image_url, badge, link_label, link_url
+               FROM events ORDER BY id"""
+        ).fetchall()
+        return jsonify(events=[dict(row) for row in rows])
+
+    @app.post("/v1/events")
+    def create_event() -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        user, auth_error = require_user()
+        if auth_error:
+            return auth_error
+        if user["role"] != "manager":
+            return jsonify(error="Only managers can add events."), 403
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            return jsonify(error="A JSON request body is required."), 400
+        fields = ("title", "details", "image_url", "badge", "link_label", "link_url")
+        values = {
+            field: payload.get(field, "").strip() if isinstance(payload.get(field, ""), str) else ""
+            for field in fields
+        }
+        missing = [field for field in ("title", "details", "image_url") if not values[field]]
+        if missing:
+            return jsonify(error=f"Missing required field(s): {', '.join(missing)}."), 400
+        limits = {"title": 120, "details": 240, "image_url": 500, "badge": 100, "link_label": 40, "link_url": 500}
+        if any(len(values[field]) > limit for field, limit in limits.items()):
+            return jsonify(error="One or more event fields exceed their maximum length."), 400
+        if not safe_event_url(values["image_url"]):
+            return jsonify(error="Poster images must use an HTTPS URL or a site-relative path."), 400
+        if bool(values["link_label"]) != bool(values["link_url"]):
+            return jsonify(error="Provide both a link label and a link URL, or leave both blank."), 400
+        if values["link_url"] and not safe_event_url(values["link_url"]):
+            return jsonify(error="Event links must use an HTTPS URL or a site-relative path."), 400
+        cursor = database().execute(
+            """INSERT INTO events (title, details, image_url, badge, link_label, link_url)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            tuple(values[field] for field in fields),
+        )
+        database().commit()
+        return jsonify(event={"id": cursor.lastrowid, **values}), 201
+
+    @app.delete("/v1/events/<int:event_id>")
+    def delete_event(event_id: int) -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        user, auth_error = require_user()
+        if auth_error:
+            return auth_error
+        if user["role"] != "manager":
+            return jsonify(error="Only managers can remove events."), 403
+        cursor = database().execute("DELETE FROM events WHERE id = ?", (event_id,))
+        database().commit()
+        if cursor.rowcount == 0:
+            return jsonify(error="Event not found."), 404
+        return jsonify(message="Event removed.")
 
     @app.get("/v1/portfolios")
     def list_portfolios() -> Response:

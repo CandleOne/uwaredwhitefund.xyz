@@ -6,6 +6,7 @@
     <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz" />
     <title>Manage Members | Red &amp; White Fund</title>
     <link rel="stylesheet" href="site.css?v=portfolio-widget" />
+    <link rel="stylesheet" href="eventstyles.css" />
     <script src="site.js" defer></script>
     <script src="member-management.js" defer></script>
   </head>
@@ -28,6 +29,27 @@
           <button class="login-submit" type="submit">Create Account</button>
           <p class="dashboard-error" data-member-message role="alert" hidden></p>
         </form>
+      </section>
+      <section class="page-content event-admin-page" aria-labelledby="event-admin-heading">
+        <div class="login-panel event-admin-panel">
+          <h2 id="event-admin-heading">Manage Event Library</h2>
+          <p>Add events to the public library grid or remove events that are no longer needed.</p>
+          <form data-create-event-form>
+            <label class="login-field" for="event-title">Event Title<input id="event-title" name="title" type="text" maxlength="120" required /></label>
+            <label class="login-field" for="event-details">Event Details<input id="event-details" name="details" type="text" maxlength="240" placeholder="Time, location, price, or other details" required /></label>
+            <label class="login-field" for="event-image">Poster Image URL or Site Path<input id="event-image" name="image_url" type="text" maxlength="500" placeholder="assets/DSC_3587-1024x683.jpg" required /></label>
+            <label class="login-field" for="event-badge">Badge (optional)<input id="event-badge" name="badge" type="text" maxlength="100" placeholder="Registration closes Nov 8" /></label>
+            <label class="login-field" for="event-link-label">Button Label (optional)<input id="event-link-label" name="link_label" type="text" maxlength="40" placeholder="Register" /></label>
+            <label class="login-field" for="event-link-url">Button Link (optional)<input id="event-link-url" name="link_url" type="text" maxlength="500" placeholder="icomps/ccomp.html" /></label>
+            <button class="login-submit" type="submit">Add Event</button>
+            <p class="dashboard-error" data-event-message role="alert" hidden></p>
+          </form>
+          <div class="event-admin-list-section">
+            <h3>Current Events</h3>
+            <p class="event-admin-status" data-event-list-status aria-live="polite">Loading events…</p>
+            <ul class="event-admin-list" data-event-list aria-live="polite"></ul>
+          </div>
+        </div>
       </section>
     </main>
   </body>
