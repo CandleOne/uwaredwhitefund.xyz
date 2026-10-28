@@ -155,7 +155,19 @@
     right: 12px;
     bottom: 12px;
     text-decoration: none;
+    color: #ffffff; /* Makes the link white */
+    text-decoration: none; /* Optional: Removes the underline */
 }
+
+.poster-aux a {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    text-decoration: none;
+    color: #ffffff; /* Makes the link white */
+    text-decoration: none; /* Optional: Removes the underline */
+}
+
 .poster-badge { left: 12px; }
 
 .poster-info {
