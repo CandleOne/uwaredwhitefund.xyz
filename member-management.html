@@ -37,10 +37,23 @@
           <form data-create-event-form>
             <label class="login-field" for="event-title">Event Title<input id="event-title" name="title" type="text" maxlength="120" required /></label>
             <label class="login-field" for="event-details">Event Details<input id="event-details" name="details" type="text" maxlength="240" placeholder="Time, location, price, or other details" required /></label>
-            <label class="login-field" for="event-image">Poster Image URL or Site Path<input id="event-image" name="image_url" type="text" maxlength="500" placeholder="assets/DSC_3587-1024x683.jpg" required /></label>
+            <label class="login-field" for="event-image">Poster Image<select id="event-image" name="image_url" required>
+              <option value="">Loading poster images…</option>
+            </select></label>
+            <p class="event-poster-help">Add JPG, PNG, WebP, or GIF files to assets/eventposters, then deploy the site and API to make them available here.</p>
+            <img class="event-poster-preview" data-event-poster-preview alt="Selected event poster preview" hidden />
             <label class="login-field" for="event-badge">Badge (optional)<input id="event-badge" name="badge" type="text" maxlength="100" placeholder="Registration closes Nov 8" /></label>
             <label class="login-field" for="event-link-label">Button Label (optional)<input id="event-link-label" name="link_label" type="text" maxlength="40" placeholder="Register" /></label>
-            <label class="login-field" for="event-link-url">Button Link (optional)<input id="event-link-url" name="link_url" type="text" maxlength="500" placeholder="icomps/ccomp.html" /></label>
+            <label class="login-field" for="event-link-url">Button Destination (optional)<select id="event-link-url" name="link_url">
+              <option value="">No button</option>
+              <option value="icomps/ccomp.html">Red &amp; White Competition registration</option>
+              <option value="icomps/ycomp.html">Young Investors Competition registration</option>
+              <option value="events.html">Events page</option>
+              <option value="contact.html">Contact page</option>
+              <option value="portfolio.html">Portfolio page</option>
+              <option value="custom">Custom HTTPS link…</option>
+            </select></label>
+            <label class="login-field" for="event-custom-link" data-custom-link-field hidden>Custom HTTPS link<input id="event-custom-link" name="custom_link_url" type="url" maxlength="500" placeholder="https://example.com/register" /></label>
             <button class="login-submit" type="submit">Add Event</button>
             <p class="dashboard-error" data-event-message role="alert" hidden></p>
           </form>

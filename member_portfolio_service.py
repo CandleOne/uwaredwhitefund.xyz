@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 import click
 from alpaca.common.exceptions import APIError
@@ -243,6 +243,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.route("/v1/auth", methods=["OPTIONS"])
     @app.route("/v1/portfolios", methods=["OPTIONS"])
     @app.route("/v1/events", methods=["OPTIONS"])
+    @app.route("/v1/event-posters", methods=["OPTIONS"])
     @app.route("/v1/events/<int:event_id>", methods=["OPTIONS"])
     def options(event_id: int | None = None) -> Response:
         response = Response(status=204)
@@ -396,6 +397,24 @@ def create_app(settings: Settings | None = None) -> Flask:
                FROM events ORDER BY id"""
         ).fetchall()
         return jsonify(events=[dict(row) for row in rows])
+
+    @app.get("/v1/event-posters")
+    def list_event_posters() -> Response:
+        user, auth_error = require_user()
+        if auth_error:
+            return auth_error
+        if user["role"] != "manager":
+            return jsonify(error="Only managers can list event poster images."), 403
+        poster_directory = PROJECT_ROOT / "assets" / "eventposters"
+        supported_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+        posters = [
+            {"name": poster.name, "url": f"assets/eventposters/{quote(poster.name)}"}
+            for poster in sorted(poster_directory.iterdir(), key=lambda item: item.name.casefold())
+            if not poster.is_symlink()
+            and poster.is_file()
+            and poster.suffix.lower() in supported_extensions
+        ]
+        return jsonify(posters=posters)
 
     @app.post("/v1/events")
     def create_event() -> Response:

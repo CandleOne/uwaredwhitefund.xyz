@@ -183,6 +183,31 @@ class MemberServiceTest(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("both a link label and a link URL", response.json["error"])
 
+    def test_event_poster_list_requires_manager(self):
+        response = self.client.get("/v1/event-posters")
+        self.assertEqual(response.status_code, 401)
+
+        token = self.status().json["csrf_token"]
+        self.post(
+            "/v1/auth/setup",
+            token,
+            {"email": "manager@example.com", "password": "test-password-123"},
+        )
+        response = self.client.get("/v1/event-posters")
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.json["posters"], list)
+        self.assertIn(
+            {"name": "placeholder.jpg", "url": "assets/eventposters/placeholder.jpg"},
+            response.json["posters"],
+        )
+        self.assertTrue(
+            all(
+                poster["url"].startswith("assets/eventposters/")
+                and poster["name"].lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))
+                for poster in response.json["posters"]
+            )
+        )
+
     @patch("member_portfolio_service.TradingClient")
     def test_linked_and_default_portfolio_streams(self, trading_client):
         trading_client.return_value.get_account.return_value = SimpleNamespace(equity="100")

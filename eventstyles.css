@@ -211,6 +211,41 @@
     text-align: left;
 }
 
+.event-admin-panel select {
+    height: 46px;
+    border: 1px solid #c8cdca;
+    padding: 0 12px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 400;
+}
+
+.event-poster-help {
+    margin: 8px 0 0 !important;
+    color: var(--muted);
+    font-family: Arial, sans-serif;
+    font-size: 0.82rem;
+}
+
+.event-poster-preview {
+    display: block;
+    width: min(100%, 260px);
+    max-height: 340px;
+    margin-top: 16px;
+    border: 1px solid var(--line);
+    object-fit: contain;
+}
+
+.event-poster-preview[hidden] {
+    display: none;
+}
+
+.event-admin-panel .login-submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .event-admin-list-section {
     margin-top: 40px;
     border-top: 1px solid var(--line);

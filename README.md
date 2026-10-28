@@ -10,6 +10,12 @@ added or removed from the manager's Manage Members page. The separate
 deployment: the member service also serves the shared paper dashboard at
 `/v1/dashboard/stream`.
 
+Event posters can be selected from `assets/eventposters/` in the manager's
+event form. Add JPG, JPEG, PNG, WebP, or GIF files to that folder and deploy
+both the static site and API so the poster is available in the form and on the
+public Events page. Event buttons can link to the built-in page choices or a
+custom HTTPS URL.
+
 ## Deploy the API to Fly.io
 
 Requirements: a Fly.io account with billing enabled, the `fly` CLI, and access
