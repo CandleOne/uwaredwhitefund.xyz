@@ -58,14 +58,10 @@ INITIAL_EVENTS = (
 
 APPLICATION_FIELDS = (
     ("name", "Name"),
-    ("student_id", "Student ID"),
     ("preferred_email", "Preferred Email"),
-    ("phone", "Phone"),
     ("current_class_status", "Current Class Status"),
     ("expected_graduation_date", "Expected UWA Graduation Date"),
     ("majors", "Major(s)"),
-    ("total_hours_completed", "Total Hours Completed at UWA"),
-    ("overall_gpa", "Overall GPA"),
     ("interest_reason", "Why Interested in Becoming a Fund Member"),
 )
 
