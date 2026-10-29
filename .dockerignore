@@ -2,3 +2,6 @@
 !Dockerfile
 !requirements.txt
 !member_portfolio_service.py
+!assets/
+!assets/eventposters/
+!assets/eventposters/**

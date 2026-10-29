@@ -15,7 +15,42 @@ const addEventButton = eventForm.querySelector('button[type="submit"]');
 const eventLinkSelect = document.querySelector("#event-link-url");
 const customLinkField = document.querySelector("[data-custom-link-field]");
 const customLinkInput = document.querySelector("#event-custom-link");
+const adminTabs = [...document.querySelectorAll("[data-admin-tab]")];
+const adminPanels = [...document.querySelectorAll("[data-admin-panel]")];
 let csrfToken = "";
+
+function selectAdminTab(tabName, moveFocus = false) {
+  adminTabs.forEach((tab) => {
+    const isSelected = tab.dataset.adminTab === tabName;
+    tab.classList.toggle("is-active", isSelected);
+    tab.setAttribute("aria-selected", String(isSelected));
+    tab.tabIndex = isSelected ? 0 : -1;
+    if (isSelected && moveFocus) tab.focus();
+  });
+  adminPanels.forEach((panel) => {
+    const isSelected = panel.dataset.adminPanel === tabName;
+    panel.classList.toggle("is-active", isSelected);
+    panel.hidden = !isSelected;
+  });
+}
+
+adminTabs.forEach((tab, index) => {
+  tab.addEventListener("click", () => selectAdminTab(tab.dataset.adminTab));
+  tab.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? adminTabs.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + adminTabs.length) % adminTabs.length;
+    selectAdminTab(adminTabs[nextIndex].dataset.adminTab, true);
+  });
+});
+
+document.querySelectorAll("[data-admin-tab-target]").forEach((button) => {
+  button.addEventListener("click", () => selectAdminTab(button.dataset.adminTabTarget));
+});
 
 function showMessage(text, isError = false) {
   message.textContent = text;

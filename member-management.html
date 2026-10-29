@@ -20,21 +20,72 @@
     </header>
     <main>
       <section class="hero"><div class="hero-content"><h1>Manage Members</h1></div></section>
-      <section class="page-content login-page" aria-labelledby="create-member-heading">
-        <form class="login-panel" data-create-member-form>
-          <h2 id="create-member-heading">Create Member Account</h2>
-          <p>Create a regular member account. University SSO will replace this temporary password flow.</p>
-          <label class="login-field" for="member-email">Email Address<input id="member-email" name="email" type="email" autocomplete="email" required /></label>
-          <label class="login-field" for="member-password">Temporary Password<input id="member-password" name="password" type="password" autocomplete="new-password" minlength="12" required /></label>
-          <button class="login-submit" type="submit">Create Account</button>
-          <p class="dashboard-error" data-member-message role="alert" hidden></p>
-        </form>
-      </section>
-      <section class="page-content event-admin-page" aria-labelledby="event-admin-heading">
-        <div class="login-panel event-admin-panel">
-          <h2 id="event-admin-heading">Manage Event Library</h2>
-          <p>Add events to the public library grid or remove events that are no longer needed.</p>
-          <form data-create-event-form>
+      <section class="admin-shell" aria-labelledby="admin-heading">
+        <div class="admin-heading">
+          <div>
+            <p class="admin-eyebrow">Manager workspace</p>
+            <h2 id="admin-heading">Administration</h2>
+            <p>Manage member access and the public event library from one place.</p>
+          </div>
+          <span class="admin-status"><span aria-hidden="true"></span> Manager access</span>
+        </div>
+        <div class="admin-layout">
+          <nav class="admin-tabs" aria-label="Administration tools" role="tablist">
+            <button class="admin-tab is-active" id="admin-tab-overview" type="button" role="tab" aria-selected="true" aria-controls="admin-panel-overview" data-admin-tab="overview">
+              <span class="admin-tab-icon" aria-hidden="true">⌂</span>
+              <span><strong>Overview</strong><small>Workspace summary</small></span>
+            </button>
+            <button class="admin-tab" id="admin-tab-members" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-members" data-admin-tab="members" tabindex="-1">
+              <span class="admin-tab-icon" aria-hidden="true">+</span>
+              <span><strong>Members</strong><small>Create accounts</small></span>
+            </button>
+            <button class="admin-tab" id="admin-tab-events" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-events" data-admin-tab="events" tabindex="-1">
+              <span class="admin-tab-icon" aria-hidden="true">▦</span>
+              <span><strong>Event library</strong><small>Publish and remove</small></span>
+            </button>
+          </nav>
+          <div class="admin-panels">
+            <section class="admin-panel is-active" id="admin-panel-overview" role="tabpanel" aria-labelledby="admin-tab-overview" data-admin-panel="overview">
+              <div class="admin-panel-header">
+                <p class="admin-eyebrow">Workspace overview</p>
+                <h3>Welcome to administration</h3>
+                <p>Choose a tool to manage the fund. Changes are applied immediately to the member service and public site.</p>
+              </div>
+              <div class="admin-tool-cards">
+                <button class="admin-tool-card" type="button" data-admin-tab-target="members">
+                  <span class="admin-card-icon">+</span>
+                  <span><strong>Member accounts</strong><small>Create login credentials for new members.</small></span>
+                  <span class="admin-card-arrow" aria-hidden="true">→</span>
+                </button>
+                <button class="admin-tool-card" type="button" data-admin-tab-target="events">
+                  <span class="admin-card-icon">▦</span>
+                  <span><strong>Event library</strong><small>Publish posters and manage public events.</small></span>
+                  <span class="admin-card-arrow" aria-hidden="true">→</span>
+                </button>
+              </div>
+            </section>
+            <section class="admin-panel" id="admin-panel-members" role="tabpanel" aria-labelledby="admin-tab-members" data-admin-panel="members" hidden>
+              <div class="admin-panel-header">
+                <p class="admin-eyebrow">Member accounts</p>
+                <h3>Create a member account</h3>
+                <p>Create a regular member account. University SSO will replace this temporary password flow.</p>
+              </div>
+              <form class="admin-form" data-create-member-form>
+                <div class="admin-form-grid">
+                  <label class="login-field" for="member-email">Email Address<input id="member-email" name="email" type="email" autocomplete="email" required /></label>
+                  <label class="login-field" for="member-password">Temporary Password<input id="member-password" name="password" type="password" autocomplete="new-password" minlength="12" required /></label>
+                </div>
+                <button class="login-submit" type="submit">Create Account</button>
+                <p class="dashboard-error" data-member-message role="alert" hidden></p>
+              </form>
+            </section>
+            <section class="admin-panel" id="admin-panel-events" role="tabpanel" aria-labelledby="admin-tab-events" data-admin-panel="events" hidden>
+              <div class="admin-panel-header">
+                <p class="admin-eyebrow">Public content</p>
+                <h3>Manage event library</h3>
+                <p>Add events to the public library grid or remove events that are no longer needed.</p>
+              </div>
+              <form class="admin-form" data-create-event-form>
             <label class="login-field" for="event-title">Event Title<input id="event-title" name="title" type="text" maxlength="120" required /></label>
             <label class="login-field" for="event-details">Event Details<input id="event-details" name="details" type="text" maxlength="240" placeholder="Time, location, price, or other details" required /></label>
             <label class="login-field" for="event-image">Poster Image<select id="event-image" name="image_url" required>
@@ -61,6 +112,8 @@
             <h3>Current Events</h3>
             <p class="event-admin-status" data-event-list-status aria-live="polite">Loading events…</p>
             <ul class="event-admin-list" data-event-list aria-live="polite"></ul>
+          </div>
+            </section>
           </div>
         </div>
       </section>
