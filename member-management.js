@@ -70,6 +70,7 @@ async function loadEvents() {
 }
 
 async function loadPosterOptions() {
+  addEventButton.disabled = true;
   const response = await fetch(`${apiBaseUrl}/v1/event-posters`, { credentials: "include" });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || "Unable to load event poster images.");
@@ -108,11 +109,34 @@ async function initialize() {
       throw new Error("The member service did not return a CSRF token.");
     }
     csrfToken = status.csrf_token;
-    await Promise.all([loadEvents(), loadPosterOptions()]);
+    const [eventsResult, postersResult] = await Promise.allSettled([loadEvents(), loadPosterOptions()]);
+    if (eventsResult.status === "rejected") {
+      eventListStatus.hidden = false;
+      eventListStatus.textContent = "Unable to load events. Please reload the page to try again.";
+      console.error("Unable to load events:", eventsResult.reason);
+    }
+    if (postersResult.status === "rejected") {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Unable to load poster images";
+      posterSelect.replaceChildren(option);
+      posterSelect.disabled = true;
+      addEventButton.disabled = true;
+      showEventMessage("Unable to load poster images. Please reload the page to try again.", true);
+      console.error("Unable to load event poster images:", postersResult.reason);
+    }
   } catch (error) {
     if (eventListStatus) {
       eventListStatus.hidden = false;
       eventListStatus.textContent = "Unable to load events. Please reload the page to try again.";
+    }
+    if (posterSelect) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Unable to load poster images";
+      posterSelect.replaceChildren(option);
+      posterSelect.disabled = true;
+      addEventButton.disabled = true;
     }
     showMessage(error.message || "The member service is unavailable.", true);
     console.error("Unable to initialize member management:", error);
