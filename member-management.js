@@ -340,13 +340,14 @@ posterList.addEventListener("click", async (event) => {
         headers: { "X-CSRF-Token": csrfToken },
       },
     );
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Unable to delete poster.");
     await loadPosterOptions();
   } catch (error) {
     button.disabled = false;
     posterListStatus.hidden = false;
     posterListStatus.textContent = error.message;
+    showPosterUploadMessage(error.message, true);
   }
 });
 
