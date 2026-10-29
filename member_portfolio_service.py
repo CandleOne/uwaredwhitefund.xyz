@@ -66,13 +66,6 @@ APPLICATION_FIELDS = (
     ("majors", "Major(s)"),
     ("total_hours_completed", "Total Hours Completed at UWA"),
     ("overall_gpa", "Overall GPA"),
-    ("positions_applying", "Position(s) Applying For"),
-    ("portfolio_sectors", "Portfolio Manager Sector(s)"),
-    ("completed_courses", "Relevant Courses Completed and Grades"),
-    ("current_courses", "Relevant Courses Currently Enrolled"),
-    ("extracurricular_activities", "Extracurricular Activities"),
-    ("employment_hours_per_week", "Employment Hours per Week"),
-    ("employers_positions_work", "Employer(s), Position(s), and Type of Work"),
     ("interest_reason", "Why Interested in Becoming a Fund Member"),
 )
 
@@ -434,7 +427,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             field: payload.get(field, "").strip() if isinstance(payload.get(field, ""), str) else ""
             for field, _ in APPLICATION_FIELDS
         }
-        required_fields = [field for field, _ in APPLICATION_FIELDS if field != "portfolio_sectors"]
+        required_fields = [field for field, _ in APPLICATION_FIELDS]
         missing = [field for field in required_fields if not values[field]]
         if missing:
             labels = {field: label for field, label in APPLICATION_FIELDS}
