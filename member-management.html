@@ -92,7 +92,7 @@
               <div class="admin-panel-header">
                 <p class="admin-eyebrow">Public content</p>
                 <h3>Manage event library</h3>
-                <p>Add events to the public library grid or remove events that are no longer needed.</p>
+                <p>Add, edit, or remove events in the public library grid.</p>
               </div>
               <form class="admin-form" data-create-event-form>
             <label class="login-field" for="event-title">Event Title<input id="event-title" name="title" type="text" maxlength="120" required /></label>
@@ -114,7 +114,10 @@
               <option value="custom">Custom HTTPS link…</option>
             </select></label>
             <label class="login-field" for="event-custom-link" data-custom-link-field hidden>Custom HTTPS link<input id="event-custom-link" name="custom_link_url" type="url" maxlength="500" placeholder="https://example.com/register" /></label>
-            <button class="login-submit" type="submit">Add Event</button>
+            <div class="event-form-actions">
+              <button class="login-submit" type="submit">Add Event</button>
+              <button class="event-admin-remove event-edit-cancel" data-cancel-event-edit type="button" hidden>Cancel Editing</button>
+            </div>
             <p class="dashboard-error" data-event-message role="alert" hidden></p>
           </form>
           <div class="event-admin-list-section">

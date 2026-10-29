@@ -255,7 +255,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Vary"] = "Origin"
             if request.method == "OPTIONS":
-                response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
                 response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token"
         return response
 
@@ -268,7 +268,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.route("/v1/events/<int:event_id>", methods=["OPTIONS"])
     def options(event_id: int | None = None, application_id: int | None = None) -> Response:
         response = Response(status=204)
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token"
         return response
 
@@ -490,6 +490,28 @@ def create_app(settings: Settings | None = None) -> Flask:
             return parsed.scheme == "https" and bool(parsed.netloc)
         return not parsed.netloc and not value.startswith(("//", "\\"))
 
+    def validated_event_values(payload: object) -> tuple[dict[str, str] | None, Response | None]:
+        if not isinstance(payload, dict):
+            return None, (jsonify(error="A JSON request body is required."), 400)
+        fields = ("title", "details", "image_url", "badge", "link_label", "link_url")
+        values = {
+            field: payload.get(field, "").strip() if isinstance(payload.get(field, ""), str) else ""
+            for field in fields
+        }
+        missing = [field for field in ("title", "details", "image_url") if not values[field]]
+        if missing:
+            return None, (jsonify(error=f"Missing required field(s): {', '.join(missing)}."), 400)
+        limits = {"title": 120, "details": 240, "image_url": 500, "badge": 100, "link_label": 40, "link_url": 500}
+        if any(len(values[field]) > limit for field, limit in limits.items()):
+            return None, (jsonify(error="One or more event fields exceed their maximum length."), 400)
+        if not safe_event_url(values["image_url"]):
+            return None, (jsonify(error="Poster images must use an HTTPS URL or a site-relative path."), 400)
+        if bool(values["link_label"]) != bool(values["link_url"]):
+            return None, (jsonify(error="Provide both a link label and a link URL, or leave both blank."), 400)
+        if values["link_url"] and not safe_event_url(values["link_url"]):
+            return None, (jsonify(error="Event links must use an HTTPS URL or a site-relative path."), 400)
+        return values, None
+
     @app.get("/v1/events")
     def list_events() -> Response:
         rows = database().execute(
@@ -526,26 +548,11 @@ def create_app(settings: Settings | None = None) -> Flask:
             return auth_error
         if user["role"] != "manager":
             return jsonify(error="Only managers can add events."), 403
-        payload = request.get_json(silent=True)
-        if not isinstance(payload, dict):
-            return jsonify(error="A JSON request body is required."), 400
+        values, validation_error = validated_event_values(request.get_json(silent=True))
+        if validation_error:
+            return validation_error
+        assert values is not None
         fields = ("title", "details", "image_url", "badge", "link_label", "link_url")
-        values = {
-            field: payload.get(field, "").strip() if isinstance(payload.get(field, ""), str) else ""
-            for field in fields
-        }
-        missing = [field for field in ("title", "details", "image_url") if not values[field]]
-        if missing:
-            return jsonify(error=f"Missing required field(s): {', '.join(missing)}."), 400
-        limits = {"title": 120, "details": 240, "image_url": 500, "badge": 100, "link_label": 40, "link_url": 500}
-        if any(len(values[field]) > limit for field, limit in limits.items()):
-            return jsonify(error="One or more event fields exceed their maximum length."), 400
-        if not safe_event_url(values["image_url"]):
-            return jsonify(error="Poster images must use an HTTPS URL or a site-relative path."), 400
-        if bool(values["link_label"]) != bool(values["link_url"]):
-            return jsonify(error="Provide both a link label and a link URL, or leave both blank."), 400
-        if values["link_url"] and not safe_event_url(values["link_url"]):
-            return jsonify(error="Event links must use an HTTPS URL or a site-relative path."), 400
         cursor = database().execute(
             """INSERT INTO events (title, details, image_url, badge, link_label, link_url)
                VALUES (?, ?, ?, ?, ?, ?)""",
@@ -553,6 +560,39 @@ def create_app(settings: Settings | None = None) -> Flask:
         )
         database().commit()
         return jsonify(event={"id": cursor.lastrowid, **values}), 201
+
+    @app.put("/v1/events/<int:event_id>")
+    def update_event(event_id: int) -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        user, auth_error = require_user()
+        if auth_error:
+            return auth_error
+        if user["role"] != "manager":
+            return jsonify(error="Only managers can edit events."), 403
+        values, validation_error = validated_event_values(request.get_json(silent=True))
+        if validation_error:
+            return validation_error
+        assert values is not None
+        cursor = database().execute(
+            """UPDATE events
+               SET title = ?, details = ?, image_url = ?, badge = ?, link_label = ?, link_url = ?
+               WHERE id = ?""",
+            (
+                values["title"],
+                values["details"],
+                values["image_url"],
+                values["badge"],
+                values["link_label"],
+                values["link_url"],
+                event_id,
+            ),
+        )
+        database().commit()
+        if cursor.rowcount == 0:
+            return jsonify(error="Event not found."), 404
+        return jsonify(event={"id": event_id, **values})
 
     @app.delete("/v1/events/<int:event_id>")
     def delete_event(event_id: int) -> Response:

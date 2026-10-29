@@ -5,7 +5,7 @@ management, the manager-only event library editor, encrypted portfolio
 credentials, and portfolio streams require `member_portfolio_service.py` on a
 Python host. Static hosting cannot run these endpoints. Events are stored in
 the service's SQLite database, publicly listed at `/v1/events`, and can be
-added or removed from the manager's Manage Members page. The separate
+added, edited, or removed from the manager's Manage Members page. The separate
 `alpaca_portfolio_stream.py` and old Cloudflare Worker are not needed for this
 deployment: the member service also serves the shared paper dashboard at
 `/v1/dashboard/stream`.

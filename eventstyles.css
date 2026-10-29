@@ -246,6 +246,18 @@
     cursor: not-allowed;
 }
 
+.event-form-actions,
+.event-admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.event-admin-actions {
+    flex: 0 0 auto;
+}
+
 .event-admin-list-section {
     margin-top: 40px;
     border-top: 1px solid var(--line);
@@ -314,6 +326,23 @@
 .event-admin-remove:focus-visible {
     background: var(--crimson);
     color: #fff;
+}
+
+.event-admin-edit {
+    border-color: var(--ink);
+    color: var(--ink);
+}
+
+.event-admin-edit:hover,
+.event-admin-edit:focus-visible {
+    background: var(--ink);
+    color: #fff;
+}
+
+.event-admin-remove:disabled,
+.event-admin-edit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .events-section > h2 {

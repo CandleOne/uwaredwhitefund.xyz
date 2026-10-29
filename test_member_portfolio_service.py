@@ -82,6 +82,7 @@ class MemberServiceTest(unittest.TestCase):
         )
         self.assertEqual(event_preflight.status_code, 204)
         self.assertIn("DELETE", event_preflight.headers["Access-Control-Allow-Methods"])
+        self.assertIn("PUT", event_preflight.headers["Access-Control-Allow-Methods"])
         response = self.client.get("/v1/auth/status", headers={"Origin": "https://untrusted.example"})
         self.assertNotIn("Access-Control-Allow-Origin", response.headers)
         self.assertEqual(self.post("/v1/auth/login", "invalid").status_code, 403)
@@ -147,6 +148,52 @@ class MemberServiceTest(unittest.TestCase):
         self.assertEqual(created.status_code, 201)
         event_id = created.json["event"]["id"]
         self.assertEqual(len(anonymous.get("/v1/events").json["events"]), 4)
+        updated_payload = {
+            "title": "Updated Public Event",
+            "details": "Wednesday at 7 PM",
+            "image_url": "assets/updated-event.jpg",
+            "badge": "Registration open",
+            "link_label": "Learn more",
+            "link_url": "https://events.example.com/details",
+        }
+        self.assertEqual(
+            self.client.put(
+                f"/v1/events/{event_id}",
+                json=updated_payload,
+                headers=self.origin,
+            ).status_code,
+            403,
+        )
+        updated = self.client.put(
+            f"/v1/events/{event_id}",
+            json=updated_payload,
+            headers={**self.origin, "X-CSRF-Token": token},
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json["event"], {"id": event_id, **updated_payload})
+        self.assertEqual(
+            anonymous.get("/v1/events").json["events"][-1]["title"],
+            "Updated Public Event",
+        )
+        invalid_update = {**updated_payload, "link_url": "javascript:alert(1)"}
+        rejected_update = self.client.put(
+            f"/v1/events/{event_id}",
+            json=invalid_update,
+            headers={**self.origin, "X-CSRF-Token": token},
+        )
+        self.assertEqual(rejected_update.status_code, 400)
+        self.assertEqual(
+            anonymous.get("/v1/events").json["events"][-1]["title"],
+            "Updated Public Event",
+        )
+        self.assertEqual(
+            self.client.put(
+                "/v1/events/999",
+                json=updated_payload,
+                headers={**self.origin, "X-CSRF-Token": token},
+            ).status_code,
+            404,
+        )
         self.assertEqual(
             self.client.delete(f"/v1/events/{event_id}").status_code,
             403,

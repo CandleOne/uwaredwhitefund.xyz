@@ -12,6 +12,7 @@ const eventListStatus = document.querySelector("[data-event-list-status]");
 const posterSelect = document.querySelector("#event-image");
 const posterPreview = document.querySelector("[data-event-poster-preview]");
 const addEventButton = eventForm.querySelector('button[type="submit"]');
+const cancelEventEditButton = document.querySelector("[data-cancel-event-edit]");
 const eventLinkSelect = document.querySelector("#event-link-url");
 const customLinkField = document.querySelector("[data-custom-link-field]");
 const customLinkInput = document.querySelector("#event-custom-link");
@@ -20,6 +21,9 @@ const adminPanels = [...document.querySelectorAll("[data-admin-panel]")];
 const applicationList = document.querySelector("[data-application-list]");
 const applicationListStatus = document.querySelector("[data-application-list-status]");
 let csrfToken = "";
+let editingEventId = null;
+let eventPosterCount = 0;
+let eventsById = new Map();
 
 function selectAdminTab(tabName, moveFocus = false) {
   adminTabs.forEach((tab) => {
@@ -68,6 +72,7 @@ function showEventMessage(text, isError = false) {
 
 function renderEventList(events) {
   eventList.replaceChildren();
+  eventsById = new Map(events.map((event) => [String(event.id), event]));
   eventListStatus.hidden = events.length > 0;
   eventListStatus.textContent = events.length ? "" : "There are no events in the library.";
 
@@ -87,13 +92,23 @@ function renderEventList(events) {
     details.textContent = event.details;
     description.append(details);
 
+    const actions = document.createElement("div");
+    actions.className = "event-admin-actions";
+    const editButton = document.createElement("button");
+    editButton.className = "event-admin-remove event-admin-edit";
+    editButton.type = "button";
+    editButton.textContent = "Edit";
+    editButton.dataset.editEventId = event.id;
+    editButton.setAttribute("aria-label", `Edit ${event.title}`);
+
     const removeButton = document.createElement("button");
     removeButton.className = "event-admin-remove";
     removeButton.type = "button";
     removeButton.textContent = "Remove";
     removeButton.dataset.removeEventId = event.id;
 
-    item.append(description, removeButton);
+    actions.append(editButton, removeButton);
+    item.append(description, actions);
     eventList.append(item);
   });
 }
@@ -129,6 +144,7 @@ async function loadPosterOptions() {
     option.textContent = poster.name;
     posterSelect.append(option);
   });
+  eventPosterCount = payload.posters.length;
   posterSelect.disabled = payload.posters.length === 0;
   posterSelect.required = payload.posters.length > 0;
   addEventButton.disabled = payload.posters.length === 0;
@@ -249,6 +265,66 @@ form.addEventListener("submit", async (event) => {
 
 initialize();
 
+function resetEventForm() {
+  eventForm.reset();
+  posterSelect.querySelectorAll("[data-existing-event-poster]").forEach((option) => option.remove());
+  eventLinkSelect.querySelectorAll("[data-existing-event-link]").forEach((option) => option.remove());
+  posterSelect.disabled = eventPosterCount === 0;
+  posterSelect.required = eventPosterCount > 0;
+  addEventButton.disabled = eventPosterCount === 0;
+  addEventButton.textContent = "Add Event";
+  cancelEventEditButton.hidden = true;
+  customLinkField.hidden = true;
+  customLinkInput.required = false;
+  posterPreview.hidden = true;
+  posterPreview.removeAttribute("src");
+  editingEventId = null;
+}
+
+function startEditingEvent(eventToEdit) {
+  editingEventId = String(eventToEdit.id);
+  eventForm.elements.namedItem("title").value = eventToEdit.title;
+  eventForm.elements.namedItem("details").value = eventToEdit.details;
+  eventForm.elements.namedItem("badge").value = eventToEdit.badge;
+  eventForm.elements.namedItem("link_label").value = eventToEdit.link_label;
+
+  if (![...posterSelect.options].some((option) => option.value === eventToEdit.image_url)) {
+    const existingPoster = document.createElement("option");
+    existingPoster.value = eventToEdit.image_url;
+    existingPoster.textContent = "Current poster image";
+    existingPoster.dataset.existingEventPoster = "true";
+    posterSelect.append(existingPoster);
+  }
+  posterSelect.disabled = false;
+  posterSelect.required = true;
+  posterSelect.value = eventToEdit.image_url;
+  posterPreview.src = eventToEdit.image_url;
+  posterPreview.hidden = false;
+
+  const builtInLink = [...eventLinkSelect.options].some((option) => option.value === eventToEdit.link_url);
+  const isCustomUrl = /^https:\/\//i.test(eventToEdit.link_url);
+  if (eventToEdit.link_url && !builtInLink && !isCustomUrl) {
+    const existingLink = document.createElement("option");
+    existingLink.value = eventToEdit.link_url;
+    existingLink.textContent = "Current link destination";
+    existingLink.dataset.existingEventLink = "true";
+    eventLinkSelect.append(existingLink);
+  }
+  eventLinkSelect.value = eventToEdit.link_url && !builtInLink && isCustomUrl
+    ? "custom"
+    : eventToEdit.link_url;
+  const isCustomLink = eventLinkSelect.value === "custom";
+  customLinkField.hidden = !isCustomLink;
+  customLinkInput.required = isCustomLink;
+  customLinkInput.value = isCustomLink ? eventToEdit.link_url : "";
+
+  addEventButton.disabled = false;
+  addEventButton.textContent = "Update Event";
+  cancelEventEditButton.hidden = false;
+  showEventMessage(`Editing "${eventToEdit.title}".`);
+  eventForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 eventForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const values = new FormData(eventForm);
@@ -260,25 +336,34 @@ eventForm.addEventListener("submit", async (event) => {
     ]),
   );
   payload.link_url = selectedLink === "custom" ? values.get("custom_link_url") : selectedLink;
+  addEventButton.disabled = true;
   try {
-    const response = await fetch(`${apiBaseUrl}/v1/events`, {
-      method: "POST",
+    const isEditing = editingEventId !== null;
+    const response = await fetch(`${apiBaseUrl}/v1/events${isEditing ? `/${editingEventId}` : ""}`, {
+      method: isEditing ? "PUT" : "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
       body: JSON.stringify(payload),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Unable to add event.");
-    eventForm.reset();
-    customLinkField.hidden = true;
-    customLinkInput.required = false;
-    posterPreview.hidden = true;
-    posterPreview.removeAttribute("src");
-    showEventMessage("Event added to the library.");
+    if (!response.ok) throw new Error(result.error || `Unable to ${isEditing ? "update" : "add"} event.`);
+    resetEventForm();
+    showEventMessage(isEditing ? "Event updated in the library." : "Event added to the library.");
     await loadEvents();
   } catch (error) {
     showEventMessage(error.message, true);
+  } finally {
+    if (editingEventId !== null) {
+      addEventButton.disabled = false;
+    } else {
+      addEventButton.disabled = eventPosterCount === 0;
+    }
   }
+});
+
+cancelEventEditButton.addEventListener("click", () => {
+  resetEventForm();
+  eventMessage.hidden = true;
 });
 
 eventLinkSelect.addEventListener("change", () => {
@@ -295,6 +380,13 @@ posterSelect.addEventListener("change", () => {
 });
 
 eventList.addEventListener("click", async (event) => {
+  const editButton = event.target.closest("[data-edit-event-id]");
+  if (editButton) {
+    const eventToEdit = eventsById.get(editButton.dataset.editEventId);
+    if (eventToEdit) startEditingEvent(eventToEdit);
+    return;
+  }
+
   const button = event.target.closest("[data-remove-event-id]");
   if (!button) return;
   const eventId = button.dataset.removeEventId;
@@ -308,38 +400,40 @@ eventList.addEventListener("click", async (event) => {
       headers: { "X-CSRF-Token": csrfToken },
     });
 
-    applicationList.addEventListener("click", async (event) => {
-      const button = event.target.closest("[data-download-application-id]");
-      if (!button) return;
-      button.disabled = true;
-      try {
-        const response = await fetch(`${apiBaseUrl}/v1/applications/${button.dataset.downloadApplicationId}`, {
-          credentials: "include",
-        });
-        if (!response.ok) {
-          const result = await response.json();
-          throw new Error(result.error || "Unable to download application.");
-        }
-        const blob = await response.blob();
-        const downloadUrl = URL.createObjectURL(blob);
-        const download = document.createElement("a");
-        download.href = downloadUrl;
-        download.download = `application-${button.dataset.downloadApplicationId}.csv`;
-        download.click();
-        URL.revokeObjectURL(downloadUrl);
-      } catch (error) {
-        applicationListStatus.hidden = false;
-        applicationListStatus.textContent = error.message;
-      } finally {
-        button.disabled = false;
-      }
-    });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Unable to remove event.");
+    if (editingEventId === eventId) resetEventForm();
     showEventMessage("Event removed from the library.");
     await loadEvents();
   } catch (error) {
     button.disabled = false;
     showEventMessage(error.message, true);
+  }
+});
+
+applicationList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-download-application-id]");
+  if (!button) return;
+  button.disabled = true;
+  try {
+    const response = await fetch(`${apiBaseUrl}/v1/applications/${button.dataset.downloadApplicationId}`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || "Unable to download application.");
+    }
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const download = document.createElement("a");
+    download.href = downloadUrl;
+    download.download = `application-${button.dataset.downloadApplicationId}.csv`;
+    download.click();
+    URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    applicationListStatus.hidden = false;
+    applicationListStatus.textContent = error.message;
+  } finally {
+    button.disabled = false;
   }
 });
