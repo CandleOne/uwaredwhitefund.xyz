@@ -355,6 +355,10 @@ body {
 .site-footer a { color: #fff; }
 .footer-note a:hover { color: #fff; }
 
+@media (max-width: 1200px) {
+	.home-apply-widget { position: relative; top: auto; right: auto; width: min(220px, 100%); margin: 20px auto 28px; transform: none; }
+}
+
 @media (max-width: 760px) {
 	.site-header { align-items: center; gap: 18px; padding: 16px 22px; }
 	.site-header nav { position: absolute; top: 124px; left: 0; right: 0; z-index: 10; display: none; padding: 18px 22px 24px; border-bottom: 1px solid var(--line); background: #fff; }
