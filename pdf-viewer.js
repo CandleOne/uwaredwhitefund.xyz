@@ -49,11 +49,16 @@ if (documentContainer) {
 			}).promise;
 		}
 
-		const pages = [...documentContainer.querySelectorAll(".ips-page")];
+		const pages = [...documentContainer.querySelectorAll("canvas.ips-page")];
+		const getPageTop = (page) => (
+			page.getBoundingClientRect().top -
+			documentContainer.getBoundingClientRect().top +
+			documentContainer.scrollTop
+		);
 		const getCurrentPageIndex = () => pages.reduce(
 			(closestIndex, page, pageIndex) => (
-				Math.abs(page.offsetTop - documentContainer.scrollTop) <
-				Math.abs(pages[closestIndex].offsetTop - documentContainer.scrollTop)
+				Math.abs(getPageTop(page) - documentContainer.scrollTop) <
+				Math.abs(getPageTop(pages[closestIndex]) - documentContainer.scrollTop)
 					? pageIndex
 					: closestIndex
 			),
@@ -67,7 +72,7 @@ if (documentContainer) {
 		};
 		const navigate = (pageOffset) => {
 			const nextPageIndex = Math.max(0, Math.min(pages.length - 1, getCurrentPageIndex() + pageOffset));
-			documentContainer.scrollTo({ top: pages[nextPageIndex].offsetTop, behavior: "smooth" });
+			documentContainer.scrollTo({ top: getPageTop(pages[nextPageIndex]), behavior: "smooth" });
 		};
 
 		previousButton.addEventListener("click", () => navigate(-1));
