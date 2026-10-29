@@ -184,6 +184,35 @@ body {
 	transform: translateY(1px);
 }
 
+.home-apply-widget {
+	position: fixed;
+	top: 50%;
+	right: 0;
+	z-index: 20;
+	width: min(220px, calc(100vw - 24px));
+	padding: 18px 16px;
+	border-left: 4px solid var(--crimson);
+	background: #f2f3f3;
+	box-shadow: 0 4px 16px rgb(32 39 45 / 18%);
+	text-align: center;
+	transform: translateY(-50%);
+}
+
+.home-apply-widget p {
+	margin: 0 0 12px;
+	color: var(--ink);
+	font-family: Arial, sans-serif;
+	font-size: 0.9rem;
+	font-weight: 700;
+	line-height: 1.35;
+}
+
+.home-apply-widget .apply-button {
+	padding: 10px 16px;
+	font-size: 0.82rem;
+	text-decoration: none;
+}
+
 #about h3 {
 	margin: 46px auto 12px;
 	color: var(--crimson);
