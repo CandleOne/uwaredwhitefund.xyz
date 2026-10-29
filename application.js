@@ -57,7 +57,7 @@ form.addEventListener("submit", async (event) => {
     download.click();
     URL.revokeObjectURL(downloadUrl);
     form.reset();
-    showMessage("Application submitted. Your CSV copy has been downloaded.");
+    window.location.assign("application-confirmation.html");
   } catch (error) {
     showMessage(error.message, true);
   } finally {
