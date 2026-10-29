@@ -355,9 +355,10 @@ body {
 .site-footer a { color: #fff; }
 .footer-note a:hover { color: #fff; }
 
-@media (max-width: 1200px) {
-	.home-apply-widget { position: relative; top: auto; right: auto; width: min(220px, 100%); margin: 20px auto 28px; transform: none; }
-}
+@media (max-width: 1600px) { .home-apply-widget { top: 190px; } }
+@media (max-width: 1000px) { .home-apply-widget { top: 240px; } }
+@media (max-width: 700px) { .home-apply-widget { top: 260px; } }
+@media (max-width: 480px) { .home-apply-widget { top: 300px; } }
 
 @media (max-width: 760px) {
 	.site-header { align-items: center; gap: 18px; padding: 16px 22px; }
@@ -368,7 +369,6 @@ body {
 	.nav-list a { display: block; padding: 14px 0; }
 	.menu-toggle { display: block; margin-left: auto; }
 	.portfolio-layout { grid-template-columns: 1fr; gap: 28px; }
-	.home-apply-widget { position: relative; top: auto; right: auto; width: min(220px, 100%); margin: 20px auto 28px; transform: none; }
 }
 
 @media (max-width: 560px) {
