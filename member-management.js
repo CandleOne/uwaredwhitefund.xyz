@@ -16,6 +16,11 @@ const cancelEventEditButton = document.querySelector("[data-cancel-event-edit]")
 const eventLinkSelect = document.querySelector("#event-link-url");
 const customLinkField = document.querySelector("[data-custom-link-field]");
 const customLinkInput = document.querySelector("#event-custom-link");
+const posterUploadForm = document.querySelector("[data-poster-upload-form]");
+const posterUploadMessage = document.querySelector("[data-poster-upload-message]");
+const posterUploadInput = document.querySelector("#poster-upload");
+const posterList = document.querySelector("[data-poster-list]");
+const posterListStatus = document.querySelector("[data-poster-list-status]");
 const adminTabs = [...document.querySelectorAll("[data-admin-tab]")];
 const adminPanels = [...document.querySelectorAll("[data-admin-panel]")];
 const applicationList = document.querySelector("[data-application-list]");
@@ -68,6 +73,12 @@ function showEventMessage(text, isError = false) {
   eventMessage.textContent = text;
   eventMessage.hidden = false;
   eventMessage.classList.toggle("is-error", isError);
+}
+
+function showPosterUploadMessage(text, isError = false) {
+  posterUploadMessage.textContent = text;
+  posterUploadMessage.hidden = false;
+  posterUploadMessage.classList.toggle("is-error", isError);
 }
 
 function renderEventList(events) {
@@ -143,6 +154,26 @@ async function loadPosterOptions() {
     option.value = poster.url;
     option.textContent = poster.name;
     posterSelect.append(option);
+  });
+  const managedPosters = payload.posters.filter((poster) => poster.managed);
+  posterList.replaceChildren();
+  posterListStatus.hidden = managedPosters.length > 0;
+  posterListStatus.textContent = managedPosters.length
+    ? ""
+    : "No uploaded posters yet.";
+  managedPosters.forEach((poster) => {
+    const item = document.createElement("li");
+    item.className = "event-admin-item";
+    const name = document.createElement("p");
+    name.className = "event-admin-item-title";
+    name.textContent = poster.name;
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "event-admin-remove";
+    deleteButton.type = "button";
+    deleteButton.textContent = "Delete";
+    deleteButton.dataset.deletePosterName = poster.name;
+    item.append(name, deleteButton);
+    posterList.append(item);
   });
   eventPosterCount = payload.posters.length;
   posterSelect.disabled = payload.posters.length === 0;
@@ -264,6 +295,60 @@ form.addEventListener("submit", async (event) => {
 });
 
 initialize();
+
+posterUploadForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const file = posterUploadInput.files[0];
+  if (!file) {
+    showPosterUploadMessage("Choose an image to upload.", true);
+    return;
+  }
+  const uploadButton = posterUploadForm.querySelector('button[type="submit"]');
+  uploadButton.disabled = true;
+  const formData = new FormData();
+  formData.append("poster", file);
+  try {
+    const response = await fetch(`${apiBaseUrl}/v1/event-posters`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "X-CSRF-Token": csrfToken },
+      body: formData,
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Unable to upload poster.");
+    posterUploadForm.reset();
+    showPosterUploadMessage("Poster uploaded.");
+    await loadPosterOptions();
+  } catch (error) {
+    showPosterUploadMessage(error.message, true);
+  } finally {
+    uploadButton.disabled = false;
+  }
+});
+
+posterList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-delete-poster-name]");
+  if (!button) return;
+  if (!window.confirm(`Delete ${button.dataset.deletePosterName}?`)) return;
+  button.disabled = true;
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/v1/event-posters/${encodeURIComponent(button.dataset.deletePosterName)}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "X-CSRF-Token": csrfToken },
+      },
+    );
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Unable to delete poster.");
+    await loadPosterOptions();
+  } catch (error) {
+    button.disabled = false;
+    posterListStatus.hidden = false;
+    posterListStatus.textContent = error.message;
+  }
+});
 
 function resetEventForm() {
   eventForm.reset();

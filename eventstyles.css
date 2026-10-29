@@ -228,6 +228,22 @@
     font-size: 0.82rem;
 }
 
+.poster-upload-form {
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+}
+
+.poster-upload-form input[type="file"] {
+    height: auto;
+    padding: 10px 12px;
+}
+
+.poster-upload-form .login-submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .event-poster-preview {
     display: block;
     width: min(100%, 260px);

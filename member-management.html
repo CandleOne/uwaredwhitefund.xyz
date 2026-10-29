@@ -94,6 +94,13 @@
                 <h3>Manage event library</h3>
                 <p>Add, edit, or remove events in the public library grid.</p>
               </div>
+              <form class="admin-form poster-upload-form" data-poster-upload-form>
+                <label class="login-field" for="poster-upload">Upload Event Poster
+                  <input id="poster-upload" name="poster" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/*" required />
+                </label>
+                <button class="login-submit" type="submit">Upload Poster</button>
+                <p class="dashboard-error" data-poster-upload-message role="alert" hidden></p>
+              </form>
               <form class="admin-form" data-create-event-form>
             <label class="login-field" for="event-title">Event Title<input id="event-title" name="title" type="text" maxlength="120" required /></label>
             <label class="login-field" for="event-details">Event Details<input id="event-details" name="details" type="text" maxlength="240" placeholder="Time, location, price, or other details" required /></label>
@@ -124,6 +131,11 @@
             <h3>Current Events</h3>
             <p class="event-admin-status" data-event-list-status aria-live="polite">Loading events…</p>
             <ul class="event-admin-list" data-event-list aria-live="polite"></ul>
+          </div>
+          <div class="event-admin-list-section">
+            <h3>Uploaded Posters</h3>
+            <p class="event-admin-status" data-poster-list-status aria-live="polite">Loading uploaded posters…</p>
+            <ul class="event-admin-list" data-poster-list aria-live="polite"></ul>
           </div>
             </section>
             <section class="admin-panel" id="admin-panel-applications" role="tabpanel" aria-labelledby="admin-tab-applications" data-admin-panel="applications" hidden>

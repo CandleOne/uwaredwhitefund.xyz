@@ -14,7 +14,10 @@ Event posters can be selected from `assets/eventposters/` in the manager's
 event form. Add JPG, JPEG, PNG, WebP, or GIF files to that folder and deploy
 both the static site and API so the poster is available in the form and on the
 public Events page. Event buttons can link to the built-in page choices or a
-custom HTTPS URL.
+custom HTTPS URL. Managers can also upload and delete poster images directly
+from the Event Library tab. Uploaded posters are stored under the API's
+persistent data directory and are served by the API, so they survive Fly.io
+redeployments.
 
 The Contact page links to an online application quiz at `application.html`.
 It contains the selected questions from

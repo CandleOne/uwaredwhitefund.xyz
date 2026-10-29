@@ -24,6 +24,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, request, send_file, session
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -263,10 +264,15 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.route("/v1/portfolios", methods=["OPTIONS"])
     @app.route("/v1/events", methods=["OPTIONS"])
     @app.route("/v1/event-posters", methods=["OPTIONS"])
+    @app.route("/v1/event-posters/<path:filename>", methods=["OPTIONS"])
     @app.route("/v1/applications", methods=["OPTIONS"])
     @app.route("/v1/applications/<int:application_id>", methods=["OPTIONS"])
     @app.route("/v1/events/<int:event_id>", methods=["OPTIONS"])
-    def options(event_id: int | None = None, application_id: int | None = None) -> Response:
+    def options(
+        event_id: int | None = None,
+        application_id: int | None = None,
+        filename: str | None = None,
+    ) -> Response:
         response = Response(status=204)
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token"
@@ -522,21 +528,103 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     @app.get("/v1/event-posters")
     def list_event_posters() -> Response:
-        user, auth_error = require_user()
+        user, auth_error = require_manager()
         if auth_error:
             return auth_error
-        if user["role"] != "manager":
-            return jsonify(error="Only managers can list event poster images."), 403
         poster_directory = PROJECT_ROOT / "assets" / "eventposters"
+        managed_directory = settings.database_path.parent / "eventposters"
         supported_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
-        posters = [
-            {"name": poster.name, "url": f"assets/eventposters/{quote(poster.name)}"}
-            for poster in sorted(poster_directory.iterdir(), key=lambda item: item.name.casefold())
-            if not poster.is_symlink()
-            and poster.is_file()
-            and poster.suffix.lower() in supported_extensions
-        ]
+        posters = []
+        for poster in sorted(poster_directory.iterdir(), key=lambda item: item.name.casefold()):
+            if not poster.is_symlink() and poster.is_file() and poster.suffix.lower() in supported_extensions:
+                posters.append({"name": poster.name, "url": f"assets/eventposters/{quote(poster.name)}"})
+        if managed_directory.is_dir():
+            for poster in sorted(managed_directory.iterdir(), key=lambda item: item.name.casefold()):
+                if not poster.is_symlink() and poster.is_file() and poster.suffix.lower() in supported_extensions:
+                    posters.append({
+                        "name": poster.name,
+                        "url": f"/v1/event-posters/{quote(poster.name)}",
+                        "managed": True,
+                    })
         return jsonify(posters=posters)
+
+    @app.get("/v1/event-posters/<path:filename>")
+    def serve_event_poster(filename: str) -> Response:
+        safe_name = secure_filename(filename)
+        if safe_name != filename:
+            return jsonify(error="Invalid poster filename."), 400
+        poster_path = settings.database_path.parent / "eventposters" / safe_name
+        if not poster_path.is_file() or poster_path.is_symlink():
+            return jsonify(error="Poster not found."), 404
+        return send_file(poster_path)
+
+    @app.post("/v1/event-posters")
+    def upload_event_poster() -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        _, auth_error = require_manager()
+        if auth_error:
+            return auth_error
+        uploaded_file = request.files.get("poster")
+        if uploaded_file is None or not uploaded_file.filename:
+            return jsonify(error="Choose an image to upload."), 400
+        if request.content_length and request.content_length > 8 * 1024 * 1024:
+            return jsonify(error="Poster images must be 8 MB or smaller."), 413
+        filename = secure_filename(uploaded_file.filename)
+        supported_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+        extension = Path(filename).suffix.lower()
+        if not filename or extension not in supported_extensions:
+            return jsonify(error="Poster images must be JPG, JPEG, PNG, WebP, or GIF files."), 400
+        if uploaded_file.mimetype and not uploaded_file.mimetype.startswith("image/"):
+            return jsonify(error="The uploaded file must be an image."), 400
+        header = uploaded_file.stream.read(12)
+        uploaded_file.stream.seek(0)
+        valid_signature = (
+            (extension in {".jpg", ".jpeg"} and header.startswith(b"\xff\xd8\xff"))
+            or (extension == ".png" and header.startswith(b"\x89PNG\r\n\x1a\n"))
+            or (extension == ".gif" and header.startswith((b"GIF87a", b"GIF89a")))
+            or (extension == ".webp" and header[:4] == b"RIFF" and header[8:12] == b"WEBP")
+        )
+        if not valid_signature:
+            return jsonify(error="The uploaded file does not appear to be a valid image."), 400
+        managed_directory = settings.database_path.parent / "eventposters"
+        managed_directory.mkdir(parents=True, exist_ok=True)
+        destination = managed_directory / filename
+        if destination.exists() or destination.is_symlink():
+            return jsonify(error="A poster with that filename already exists."), 409
+        try:
+            uploaded_file.save(destination)
+        except OSError:
+            return jsonify(error="The poster could not be saved. Please try again."), 500
+        return jsonify(name=filename, url=f"/v1/event-posters/{quote(filename)}"), 201
+
+    @app.delete("/v1/event-posters/<path:filename>")
+    def delete_event_poster(filename: str) -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        _, auth_error = require_manager()
+        if auth_error:
+            return auth_error
+        safe_name = secure_filename(filename)
+        if safe_name != filename:
+            return jsonify(error="Invalid poster filename."), 400
+        managed_directory = settings.database_path.parent / "eventposters"
+        poster_path = managed_directory / safe_name
+        if not poster_path.is_file() or poster_path.is_symlink():
+            return jsonify(error="Managed poster not found."), 404
+        poster_url = f"/v1/event-posters/{quote(safe_name)}"
+        in_use = database().execute(
+            "SELECT 1 FROM events WHERE image_url = ? LIMIT 1", (poster_url,)
+        ).fetchone()
+        if in_use is not None:
+            return jsonify(error="This poster is used by an event. Update or remove that event first."), 409
+        try:
+            poster_path.unlink()
+        except OSError:
+            return jsonify(error="The poster could not be deleted. Please try again."), 500
+        return jsonify(message="Poster deleted.")
 
     @app.post("/v1/events")
     def create_event() -> Response:
