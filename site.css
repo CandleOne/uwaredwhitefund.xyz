@@ -256,7 +256,7 @@ body {
 .ips-section { margin-top: 70px; padding-top: 44px; border-top: 1px solid var(--line); text-align: left; }
 .ips-section-header { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
 .ips-actions { display: flex; align-items: center; gap: 10px; }
-.page-content .ips-intro { max-width: 650px; margin: 0 0 20px auto; text-align: right; }
+.ips-section-header .ips-intro { max-width: 650px; margin: 0; text-align: right; }
 .ips-view-link { display: inline-block; padding: 12px 18px; background: var(--crimson); color: #fff; font-family: Arial, sans-serif; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
 .ips-section > .ips-view-link { display: block; width: fit-content; margin: 0 auto; }
 .ips-view-link:hover { background: #7e1620; }
