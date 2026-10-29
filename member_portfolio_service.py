@@ -451,11 +451,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             connection.rollback()
             application_path.unlink(missing_ok=True)
             return jsonify(error="The application could not be saved. Please try again."), 500
-        return Response(
-            csv_buffer.getvalue(),
-            mimetype="text/csv",
-            headers={"Content-Disposition": f'attachment; filename="red-white-fund-{filename}"'},
-        )
+        return jsonify(status="submitted"), 201
 
     @app.get("/v1/applications")
     def list_applications() -> Response:

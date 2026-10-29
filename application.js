@@ -49,13 +49,6 @@ form.addEventListener("submit", async (event) => {
       const payload = await response.json();
       throw new Error(payload.error || "Unable to submit your application.");
     }
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const download = document.createElement("a");
-    download.href = downloadUrl;
-    download.download = "red-white-fund-application.csv";
-    download.click();
-    URL.revokeObjectURL(downloadUrl);
     form.reset();
     window.location.assign("application-confirmation.html");
   } catch (error) {
