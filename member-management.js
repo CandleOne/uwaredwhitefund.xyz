@@ -155,12 +155,12 @@ async function loadPosterOptions() {
     option.textContent = poster.name;
     posterSelect.append(option);
   });
-  const managedPosters = payload.posters.filter((poster) => poster.managed);
+  const managedPosters = payload.posters;
   posterList.replaceChildren();
   posterListStatus.hidden = managedPosters.length > 0;
   posterListStatus.textContent = managedPosters.length
     ? ""
-    : "No uploaded posters yet.";
+    : "No posters in the library.";
   managedPosters.forEach((poster) => {
     const item = document.createElement("li");
     item.className = "event-admin-item";

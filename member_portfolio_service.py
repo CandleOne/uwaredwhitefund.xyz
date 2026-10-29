@@ -611,10 +611,16 @@ def create_app(settings: Settings | None = None) -> Flask:
         if safe_name != filename:
             return jsonify(error="Invalid poster filename."), 400
         managed_directory = settings.database_path.parent / "eventposters"
-        poster_path = managed_directory / safe_name
+        managed_path = managed_directory / safe_name
+        static_path = PROJECT_ROOT / "assets" / "eventposters" / safe_name
+        poster_path = managed_path if managed_path.is_file() and not managed_path.is_symlink() else static_path
         if not poster_path.is_file() or poster_path.is_symlink():
-            return jsonify(error="Managed poster not found."), 404
-        poster_url = f"/v1/event-posters/{quote(safe_name)}"
+            return jsonify(error="Poster not found."), 404
+        poster_url = (
+            f"/v1/event-posters/{quote(safe_name)}"
+            if poster_path == managed_path
+            else f"assets/eventposters/{quote(safe_name)}"
+        )
         in_use = database().execute(
             "SELECT 1 FROM events WHERE image_url = ? LIMIT 1", (poster_url,)
         ).fetchone()
