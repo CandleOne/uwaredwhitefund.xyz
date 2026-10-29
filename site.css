@@ -185,8 +185,8 @@ body {
 }
 
 .home-apply-widget {
-	position: fixed;
-	top: 50%;
+	position: absolute;
+	top: 24px;
 	right: 0;
 	z-index: 20;
 	width: min(220px, calc(100vw - 24px));
@@ -195,7 +195,10 @@ body {
 	background: #f2f3f3;
 	box-shadow: 0 4px 16px rgb(32 39 45 / 18%);
 	text-align: center;
-	transform: translateY(-50%);
+}
+
+#about {
+	position: relative;
 }
 
 .home-apply-widget p {
@@ -361,6 +364,7 @@ body {
 	.nav-list a { display: block; padding: 14px 0; }
 	.menu-toggle { display: block; margin-left: auto; }
 	.portfolio-layout { grid-template-columns: 1fr; gap: 28px; }
+	.home-apply-widget { position: relative; top: auto; right: auto; width: min(220px, 100%); margin: 20px auto 28px; }
 }
 
 @media (max-width: 560px) {
