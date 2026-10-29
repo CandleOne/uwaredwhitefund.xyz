@@ -1,11 +1,14 @@
 """Authenticated portfolio service with encrypted Alpaca paper credentials."""
 
 import base64
+import csv
 import hmac
+import io
 import json
 import os
 import sqlite3
 import time
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -19,7 +22,7 @@ from alpaca.trading.requests import GetOrdersRequest
 from alpaca.common.enums import Sort
 from cryptography.fernet import Fernet, InvalidToken
 from dotenv import load_dotenv
-from flask import Flask, Response, g, jsonify, request, session
+from flask import Flask, Response, g, jsonify, request, send_file, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -51,6 +54,26 @@ INITIAL_EVENTS = (
         "link_label": "Register",
         "link_url": "icomps/ccomp.html",
     },
+)
+
+APPLICATION_FIELDS = (
+    ("name", "Name"),
+    ("student_id", "Student ID"),
+    ("preferred_email", "Preferred Email"),
+    ("phone", "Phone"),
+    ("current_class_status", "Current Class Status"),
+    ("expected_graduation_date", "Expected UWA Graduation Date"),
+    ("majors", "Major(s)"),
+    ("total_hours_completed", "Total Hours Completed at UWA"),
+    ("overall_gpa", "Overall GPA"),
+    ("positions_applying", "Position(s) Applying For"),
+    ("portfolio_sectors", "Portfolio Manager Sector(s)"),
+    ("completed_courses", "Relevant Courses Completed and Grades"),
+    ("current_courses", "Relevant Courses Currently Enrolled"),
+    ("extracurricular_activities", "Extracurricular Activities"),
+    ("employment_hours_per_week", "Employment Hours per Week"),
+    ("employers_positions_work", "Employer(s), Position(s), and Type of Work"),
+    ("interest_reason", "Why Interested in Becoming a Fund Member"),
 )
 
 
@@ -182,6 +205,13 @@ def create_app(settings: Settings | None = None) -> Flask:
                     link_url TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
+                CREATE TABLE IF NOT EXISTS applications (
+                    id INTEGER PRIMARY KEY,
+                    filename TEXT NOT NULL UNIQUE,
+                    applicant_name TEXT NOT NULL,
+                    applicant_email TEXT NOT NULL,
+                    submitted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
                 INSERT OR IGNORE INTO application_settings (setting_key, setting_value)
                     VALUES ('default_portfolio_enabled', 'true');
                 """
@@ -244,8 +274,10 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.route("/v1/portfolios", methods=["OPTIONS"])
     @app.route("/v1/events", methods=["OPTIONS"])
     @app.route("/v1/event-posters", methods=["OPTIONS"])
+    @app.route("/v1/applications", methods=["OPTIONS"])
+    @app.route("/v1/applications/<int:application_id>", methods=["OPTIONS"])
     @app.route("/v1/events/<int:event_id>", methods=["OPTIONS"])
-    def options(event_id: int | None = None) -> Response:
+    def options(event_id: int | None = None, application_id: int | None = None) -> Response:
         response = Response(status=204)
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRF-Token"
@@ -281,6 +313,17 @@ def create_app(settings: Settings | None = None) -> Flask:
         if user is None:
             return None, (jsonify(error="Authentication is required."), 401)
         return user, None
+
+    def require_manager() -> tuple[sqlite3.Row | None, Response | None]:
+        user, auth_error = require_user()
+        if auth_error:
+            return None, auth_error
+        if user["role"] != "manager":
+            return None, (jsonify(error="Only managers can access applications."), 403)
+        return user, None
+
+    def csv_safe_value(value: str) -> str:
+        return f"'{value}" if value.startswith(("=", "+", "-", "@")) else value
 
     def read_json(fields: tuple[str, ...]) -> tuple[dict[str, str] | None, Response | None]:
         payload = request.get_json(silent=True)
@@ -378,6 +421,78 @@ def create_app(settings: Settings | None = None) -> Flask:
         except sqlite3.IntegrityError:
             return jsonify(error="A member with that email already exists."), 409
         return jsonify(message="Member account created."), 201
+
+    @app.post("/v1/applications")
+    def create_application() -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            return jsonify(error="A JSON request body is required."), 400
+        values = {
+            field: payload.get(field, "").strip() if isinstance(payload.get(field, ""), str) else ""
+            for field, _ in APPLICATION_FIELDS
+        }
+        required_fields = [field for field, _ in APPLICATION_FIELDS if field != "portfolio_sectors"]
+        missing = [field for field in required_fields if not values[field]]
+        if missing:
+            labels = {field: label for field, label in APPLICATION_FIELDS}
+            return jsonify(error=f"Please answer: {', '.join(labels[field] for field in missing)}."), 400
+        if any(len(value) > 4000 for value in values.values()):
+            return jsonify(error="One or more answers exceed the maximum length."), 400
+        csv_buffer = io.StringIO(newline="")
+        writer = csv.writer(csv_buffer)
+        writer.writerow(["Question", "Answer"])
+        writer.writerows((label, csv_safe_value(values[field])) for field, label in APPLICATION_FIELDS)
+        applications_directory = settings.database_path.parent / "applications"
+        applications_directory.mkdir(parents=True, exist_ok=True)
+        connection = database()
+        filename = f"application-{uuid.uuid4().hex}.csv"
+        connection.execute(
+            """INSERT INTO applications (filename, applicant_name, applicant_email)
+               VALUES (?, ?, ?)""",
+            (filename, values["name"], values["preferred_email"]),
+        )
+        application_path = applications_directory / filename
+        try:
+            application_path.write_text(csv_buffer.getvalue(), encoding="utf-8", newline="")
+            connection.commit()
+        except OSError:
+            connection.rollback()
+            application_path.unlink(missing_ok=True)
+            return jsonify(error="The application could not be saved. Please try again."), 500
+        return Response(
+            csv_buffer.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="red-white-fund-{filename}"'},
+        )
+
+    @app.get("/v1/applications")
+    def list_applications() -> Response:
+        _, auth_error = require_manager()
+        if auth_error:
+            return auth_error
+        rows = database().execute(
+            """SELECT id, applicant_name, applicant_email, submitted_at
+               FROM applications ORDER BY submitted_at DESC, id DESC"""
+        ).fetchall()
+        return jsonify(applications=[dict(row) for row in rows])
+
+    @app.get("/v1/applications/<int:application_id>")
+    def download_application(application_id: int) -> Response:
+        _, auth_error = require_manager()
+        if auth_error:
+            return auth_error
+        row = database().execute(
+            "SELECT filename FROM applications WHERE id = ?", (application_id,)
+        ).fetchone()
+        if row is None:
+            return jsonify(error="Application not found."), 404
+        application_path = settings.database_path.parent / "applications" / row["filename"]
+        if not application_path.is_file():
+            return jsonify(error="Application file is unavailable."), 404
+        return send_file(application_path, as_attachment=True, download_name=row["filename"], mimetype="text/csv")
 
     def safe_event_url(value: str) -> bool:
         if "\\" in value or any(ord(character) < 32 for character in value):

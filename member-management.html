@@ -43,6 +43,10 @@
               <span class="admin-tab-icon" aria-hidden="true">▦</span>
               <span><strong>Event library</strong><small>Publish and remove</small></span>
             </button>
+            <button class="admin-tab" id="admin-tab-applications" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-applications" data-admin-tab="applications" tabindex="-1">
+              <span class="admin-tab-icon" aria-hidden="true">↓</span>
+              <span><strong>Applications</strong><small>Review submissions</small></span>
+            </button>
           </nav>
           <div class="admin-panels">
             <section class="admin-panel is-active" id="admin-panel-overview" role="tabpanel" aria-labelledby="admin-tab-overview" data-admin-panel="overview">
@@ -60,6 +64,11 @@
                 <button class="admin-tool-card" type="button" data-admin-tab-target="events">
                   <span class="admin-card-icon">▦</span>
                   <span><strong>Event library</strong><small>Publish posters and manage public events.</small></span>
+                  <span class="admin-card-arrow" aria-hidden="true">→</span>
+                </button>
+                <button class="admin-tool-card" type="button" data-admin-tab-target="applications">
+                  <span class="admin-card-icon">↓</span>
+                  <span><strong>Applications</strong><small>Review and download applicant CSV files.</small></span>
                   <span class="admin-card-arrow" aria-hidden="true">→</span>
                 </button>
               </div>
@@ -113,6 +122,15 @@
             <p class="event-admin-status" data-event-list-status aria-live="polite">Loading events…</p>
             <ul class="event-admin-list" data-event-list aria-live="polite"></ul>
           </div>
+            </section>
+            <section class="admin-panel" id="admin-panel-applications" role="tabpanel" aria-labelledby="admin-tab-applications" data-admin-panel="applications" hidden>
+              <div class="admin-panel-header">
+            <p class="admin-eyebrow">Applicant files</p>
+            <h3>Submitted applications</h3>
+            <p>Download CSV files submitted through the online application. Only managers can access these files.</p>
+              </div>
+              <p class="event-admin-status" data-application-list-status aria-live="polite">Loading applications…</p>
+              <ul class="event-admin-list application-admin-list" data-application-list aria-live="polite"></ul>
             </section>
           </div>
         </div>

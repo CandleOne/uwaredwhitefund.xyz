@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz" />
+    <title>Fund Application | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="site.css" />
+    <link rel="stylesheet" href="application.css" />
+    <script src="site.js" defer></script>
+    <script src="application.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+      <div class="brand">
+        <p class="brand-title">Red &amp; White Fund</p>
+        <img class="brand-mark" src="assets/uwacollegeofbusiness.png" alt="College of Business" />
+      </div>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="events.html">Events</a></li>
+          <li><a href="leadership.html">Leadership</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="publications.html">Publications</a></li>
+          <li><a href="portfolio.html">Portfolio</a></li>
+          <li><a href="media.html">Media</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="hero"><div class="hero-content"><h1>Fund Application</h1></div></section>
+      <section class="application-page" aria-labelledby="application-heading">
+        <div class="application-intro">
+          <p class="application-eyebrow">Officer and Portfolio Manager Application</p>
+          <h2 id="application-heading">Tell us about yourself</h2>
+          <p>Complete every question below. When you submit, a CSV copy of your application will download for your records and be shared securely with the Fund team.</p>
+        </div>
+        <form class="application-form" data-application-form>
+          <fieldset>
+            <legend>Contact and academic information</legend>
+            <div class="application-grid">
+              <label for="name">Name<input id="name" name="name" type="text" required /></label>
+              <label for="student-id">Student ID<input id="student-id" name="student_id" type="text" required /></label>
+              <label for="preferred-email">Preferred Email<input id="preferred-email" name="preferred_email" type="email" autocomplete="email" required /></label>
+              <label for="phone">Phone<input id="phone" name="phone" type="tel" autocomplete="tel" required /></label>
+              <label for="class-status">Current Class Status<input id="class-status" name="current_class_status" type="text" placeholder="Sophomore, Junior, Graduate, etc." required /></label>
+              <label for="graduation-date">Expected UWA Graduation Date<input id="graduation-date" name="expected_graduation_date" type="text" placeholder="Month and year" required /></label>
+              <label for="majors">Major(s)<input id="majors" name="majors" type="text" required /></label>
+              <label for="hours-completed">Total Hours Completed at UWA<input id="hours-completed" name="total_hours_completed" type="text" required /></label>
+              <label for="gpa">Overall GPA<input id="gpa" name="overall_gpa" type="text" required /></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Fund interests</legend>
+            <label for="positions">Position(s) Applying For<select id="positions" name="positions_applying" multiple required size="7">
+              <option>Chief Investment Officer</option>
+              <option>Chief Compliance Officer</option>
+              <option>Chief Economist</option>
+              <option>Chief Accounting Officer</option>
+              <option>Marketing Director</option>
+              <option>Portfolio Manager</option>
+              <option>Industry Analyst</option>
+            </select></label>
+            <label for="sectors">If applying for Portfolio Manager, list sector(s)<select id="sectors" name="portfolio_sectors" multiple size="8">
+              <option>Alternative Investments</option>
+              <option>Consumer Goods and Services</option>
+              <option>Energy and Utilities</option>
+              <option>Financials</option>
+              <option>Fixed Income</option>
+              <option>Healthcare</option>
+              <option>Information Technology and Telecommunications</option>
+              <option>Industrials and Materials</option>
+            </select></label>
+            <p class="application-help">Hold Ctrl (Windows) or Command (Mac) to select more than one option.</p>
+          </fieldset>
+          <fieldset>
+            <legend>Experience</legend>
+            <label for="completed-courses">Accounting, Finance, Economics, Marketing, and MBA courses completed and grades received<textarea id="completed-courses" name="completed_courses" rows="4" required></textarea></label>
+            <label for="current-courses">Accounting, Finance, Economics, Marketing, and MBA courses in which currently enrolled<textarea id="current-courses" name="current_courses" rows="4" required></textarea></label>
+            <label for="activities">Extracurricular Activities<textarea id="activities" name="extracurricular_activities" rows="4" required></textarea></label>
+            <div class="application-grid">
+              <label for="employment-hours">How many hours per week do you work?<input id="employment-hours" name="employment_hours_per_week" type="text" required /></label>
+              <label for="employers">Employer(s), Position(s), and Type of Work<textarea id="employers" name="employers_positions_work" rows="3" required></textarea></label>
+            </div>
+            <label for="interest-reason">Briefly explain why you are interested in becoming a member of the Fund<textarea id="interest-reason" name="interest_reason" rows="6" required></textarea></label>
+          </fieldset>
+          <button class="apply-button application-submit" type="submit">Submit Application</button>
+          <p class="application-message" data-application-message role="status" aria-live="polite" hidden></p>
+        </form>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-main">
+        <p class="footer-wordmark">UWA The University of West Alabama</p>
+      </div>
+    </footer>
+  </body>
+</html>

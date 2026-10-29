@@ -17,6 +17,8 @@ const customLinkField = document.querySelector("[data-custom-link-field]");
 const customLinkInput = document.querySelector("#event-custom-link");
 const adminTabs = [...document.querySelectorAll("[data-admin-tab]")];
 const adminPanels = [...document.querySelectorAll("[data-admin-panel]")];
+const applicationList = document.querySelector("[data-application-list]");
+const applicationListStatus = document.querySelector("[data-application-list-status]");
 let csrfToken = "";
 
 function selectAdminTab(tabName, moveFocus = false) {
@@ -132,6 +134,41 @@ async function loadPosterOptions() {
   addEventButton.disabled = payload.posters.length === 0;
 }
 
+function renderApplicationList(applications) {
+  applicationList.replaceChildren();
+  applicationListStatus.hidden = applications.length > 0;
+  applicationListStatus.textContent = applications.length
+    ? ""
+    : "No online applications have been submitted.";
+  applications.forEach((application) => {
+    const item = document.createElement("li");
+    item.className = "event-admin-item";
+    const description = document.createElement("div");
+    const name = document.createElement("p");
+    name.className = "event-admin-item-title";
+    name.textContent = application.applicant_name;
+    const details = document.createElement("p");
+    details.className = "event-admin-item-details";
+    details.textContent = `${application.applicant_email} · Submitted ${application.submitted_at}`;
+    description.append(name, details);
+    const downloadButton = document.createElement("button");
+    downloadButton.className = "event-admin-remove";
+    downloadButton.type = "button";
+    downloadButton.textContent = "Download CSV";
+    downloadButton.dataset.downloadApplicationId = application.id;
+    item.append(description, downloadButton);
+    applicationList.append(item);
+  });
+}
+
+async function loadApplications() {
+  const response = await fetch(`${apiBaseUrl}/v1/applications`, { credentials: "include" });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "Unable to load applications.");
+  if (!Array.isArray(payload.applications)) throw new Error("The application service returned an invalid application list.");
+  renderApplicationList(payload.applications);
+}
+
 async function initialize() {
   try {
     const response = await fetch(`${apiBaseUrl}/v1/auth/status`, { credentials: "include" });
@@ -144,7 +181,11 @@ async function initialize() {
       throw new Error("The member service did not return a CSRF token.");
     }
     csrfToken = status.csrf_token;
-    const [eventsResult, postersResult] = await Promise.allSettled([loadEvents(), loadPosterOptions()]);
+    const [eventsResult, postersResult, applicationsResult] = await Promise.allSettled([
+      loadEvents(),
+      loadPosterOptions(),
+      loadApplications(),
+    ]);
     if (eventsResult.status === "rejected") {
       eventListStatus.hidden = false;
       eventListStatus.textContent = "Unable to load events. Please reload the page to try again.";
@@ -160,6 +201,11 @@ async function initialize() {
       showEventMessage("Unable to load poster images. Please reload the page to try again.", true);
       console.error("Unable to load event poster images:", postersResult.reason);
     }
+    if (applicationsResult.status === "rejected") {
+      applicationListStatus.hidden = false;
+      applicationListStatus.textContent = "Unable to load applications. Please reload the page to try again.";
+      console.error("Unable to load applications:", applicationsResult.reason);
+    }
   } catch (error) {
     if (eventListStatus) {
       eventListStatus.hidden = false;
@@ -172,6 +218,10 @@ async function initialize() {
       posterSelect.replaceChildren(option);
       posterSelect.disabled = true;
       addEventButton.disabled = true;
+    }
+    if (applicationListStatus) {
+      applicationListStatus.hidden = false;
+      applicationListStatus.textContent = "Unable to load applications. Please reload the page to try again.";
     }
     showMessage(error.message || "The member service is unavailable.", true);
     console.error("Unable to initialize member management:", error);
@@ -256,6 +306,33 @@ eventList.addEventListener("click", async (event) => {
       method: "DELETE",
       credentials: "include",
       headers: { "X-CSRF-Token": csrfToken },
+    });
+
+    applicationList.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-download-application-id]");
+      if (!button) return;
+      button.disabled = true;
+      try {
+        const response = await fetch(`${apiBaseUrl}/v1/applications/${button.dataset.downloadApplicationId}`, {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.error || "Unable to download application.");
+        }
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const download = document.createElement("a");
+        download.href = downloadUrl;
+        download.download = `application-${button.dataset.downloadApplicationId}.csv`;
+        download.click();
+        URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+        applicationListStatus.hidden = false;
+        applicationListStatus.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Unable to remove event.");
