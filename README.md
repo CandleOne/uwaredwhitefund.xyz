@@ -17,7 +17,9 @@ public Events page. Event buttons can link to the built-in page choices or a
 custom HTTPS URL. Managers can also upload and delete poster images directly
 from the Event Library tab. Uploaded posters are stored under the API's
 persistent data directory and are served by the API, so they survive Fly.io
-redeployments.
+redeployments. Event records and poster changes take effect immediately
+without another deploy; redeploy once after installing this runtime-managed
+poster path.
 
 The Contact page links to an online application quiz at `application.html`.
 It contains the selected questions from

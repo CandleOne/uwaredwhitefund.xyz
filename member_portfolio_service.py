@@ -317,6 +317,19 @@ def create_app(settings: Settings | None = None) -> Flask:
             return None, (jsonify(error="Only managers can access applications."), 403)
         return user, None
 
+    def event_poster_url(image_url: str) -> str:
+        prefix = "assets/eventposters/"
+        if image_url.startswith(prefix):
+            filename = image_url.removeprefix(prefix)
+            return f"{request.url_root.rstrip('/')}/v1/event-posters/{quote(filename)}"
+        return image_url
+
+    def managed_poster_url(filename: str) -> str:
+        api_origin = request.url_root.rstrip("/")
+        if settings.allowed_origin.startswith("https://") and api_origin.startswith("http://"):
+            api_origin = f"https://{api_origin.removeprefix('http://')}"
+        return f"{api_origin}/v1/event-posters/{quote(filename)}"
+
     def csv_safe_value(value: str) -> str:
         return f"'{value}" if value.startswith(("=", "+", "-", "@")) else value
 
@@ -524,7 +537,14 @@ def create_app(settings: Settings | None = None) -> Flask:
             """SELECT id, title, details, image_url, badge, link_label, link_url
                FROM events ORDER BY id"""
         ).fetchall()
-        return jsonify(events=[dict(row) for row in rows])
+        events = []
+        for row in rows:
+            event = dict(row)
+            event["image_url"] = event_poster_url(event["image_url"])
+            events.append(event)
+        response = jsonify(events=events)
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.get("/v1/event-posters")
     def list_event_posters() -> Response:
@@ -543,7 +563,7 @@ def create_app(settings: Settings | None = None) -> Flask:
                 if not poster.is_symlink() and poster.is_file() and poster.suffix.lower() in supported_extensions:
                     posters.append({
                         "name": poster.name,
-                        "url": f"/v1/event-posters/{quote(poster.name)}",
+                        "url": managed_poster_url(poster.name),
                         "managed": True,
                     })
         return jsonify(posters=posters)
@@ -555,8 +575,12 @@ def create_app(settings: Settings | None = None) -> Flask:
             return jsonify(error="Invalid poster filename."), 400
         poster_path = settings.database_path.parent / "eventposters" / safe_name
         if not poster_path.is_file() or poster_path.is_symlink():
+            poster_path = PROJECT_ROOT / "assets" / "eventposters" / safe_name
+        if not poster_path.is_file() or poster_path.is_symlink():
             return jsonify(error="Poster not found."), 404
-        return send_file(poster_path)
+        response = send_file(poster_path)
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.post("/v1/event-posters")
     def upload_event_poster() -> Response:
@@ -597,7 +621,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             uploaded_file.save(destination)
         except OSError:
             return jsonify(error="The poster could not be saved. Please try again."), 500
-        return jsonify(name=filename, url=f"/v1/event-posters/{quote(filename)}"), 201
+        return jsonify(name=filename, url=managed_poster_url(filename)), 201
 
     @app.delete("/v1/event-posters/<path:filename>")
     def delete_event_poster(filename: str) -> Response:
@@ -617,7 +641,7 @@ def create_app(settings: Settings | None = None) -> Flask:
         if not poster_path.is_file() or poster_path.is_symlink():
             return jsonify(error="Poster not found."), 404
         poster_url = (
-            f"/v1/event-posters/{quote(safe_name)}"
+            managed_poster_url(safe_name)
             if poster_path == managed_path
             else f"assets/eventposters/{quote(safe_name)}"
         )
