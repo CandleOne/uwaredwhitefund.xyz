@@ -185,9 +185,9 @@ body {
 }
 
 .home-apply-widget {
-	position: fixed;
-	top: 50%;
-	right: 0;
+	position: absolute;
+	top: 24px;
+	right: min(0px, calc((1160px - 100vw) / 2));
 	z-index: 20;
 	width: min(220px, calc(100vw - 24px));
 	padding: 18px 16px;
@@ -195,7 +195,10 @@ body {
 	background: #f2f3f3;
 	box-shadow: 0 4px 16px rgb(32 39 45 / 18%);
 	text-align: center;
-	transform: translateY(-50%);
+}
+
+#about {
+	position: relative;
 }
 
 .home-apply-widget p {
