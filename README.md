@@ -23,9 +23,9 @@ poster path.
 
 The Contact page links to an online application quiz at `application.html`.
 It contains the selected questions from
-`assets/Red_White_Fund_Application.docx`, downloads a CSV copy for the
-applicant, and stores submissions in the API's
-persistent application directory. Managers can review and download submissions
+`assets/Red_White_Fund_Application.docx` and stores submissions in the API's
+persistent application directory. Managers
+can review and download submissions
 from the Applications tab in Manage Members. On Fly.io, application CSV files
 are stored under `/data/applications` alongside the SQLite volume.
 
