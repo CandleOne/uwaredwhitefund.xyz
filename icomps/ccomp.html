@@ -54,6 +54,10 @@
 		.fact { min-height: 145px; padding: 18px 22px 22px 0; border-top: 1px solid #bdb3a8; }
 		.fact:nth-child(odd) { margin-right: 22px; }
 		.fact:nth-child(even) { padding-left: 22px; border-left: 1px solid #bdb3a8; }
+		.fact-break { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-right: 0 !important; padding-left: 0 !important; border-top: 1px solid #bdb3a8; border-left: 0 !important; }
+		.fact-break .fact { border-top: 0; }
+		.fact-break .fact:first-child { margin-right: 22px; }
+		.fact-break .fact:last-child { padding-left: 22px; border-left: 1px solid #bdb3a8; }
 		.fact dt { margin-bottom: 10px; color: var(--red-dark); font-family: var(--sans); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
 		.fact dd { margin: 0; font-size: clamp(1.2rem, 2.2vw, 1.65rem); line-height: 1.28; }
 		.strategy-note { width: min(1240px, calc(100% - 64px)); margin: 0 auto; padding: 27px 0 32px; color: var(--red-dark); font-size: clamp(1.15rem, 2.2vw, 1.6rem); font-style: italic; line-height: 1.45; }
@@ -99,6 +103,9 @@
 			.fact { min-height: 0; padding: 17px 0; }
 			.fact:nth-child(odd) { margin-right: 0; }
 			.fact:nth-child(even) { padding-left: 0; border-left: 0; }
+			.fact-break { grid-template-columns: 1fr; }
+			.fact-break .fact:first-child { margin-right: 0; }
+			.fact-break .fact:last-child { padding-left: 0; border-left: 0; }
 			.action-main { align-items: flex-start; flex-direction: column; }
 			.footer { flex-direction: column; }
 		}
@@ -152,9 +159,10 @@
 					<div class="fact"><dt>Competition length</dt><dd>Three months</dd></div>
 					<div class="fact"><dt>Team format</dt><dd>Solo or teams of up to four</dd></div>
 					<div class="fact"><dt>Prize Pool</dt><dd>$500</dd></div>
-                    <br>
-                    <div class="fact"><dt>Most profitable trader</dt><dd>$300 prize</dd></div>
-					<div class="fact"><dt>Most technically interesting strategy</dt><dd>$200 prize, selected by the panel judges</dd></div>
+					<div class="fact-break">
+						<div class="fact"><dt>Most profitable trader</dt><dd>$300 prize</dd></div>
+						<div class="fact"><dt>Most technically interesting strategy</dt><dd>$200 prize, selected by the panel judges</dd></div>
+					</div>
 				</dl>
 			</div>
 		</section>
