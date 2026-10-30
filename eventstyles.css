@@ -117,6 +117,13 @@
     overflow: hidden;
     border: 1px solid var(--line);
     background: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.poster-card:hover {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+    transform: translateY(-2px);
 }
 
 .poster-card[data-hidden="true"] {
@@ -172,6 +179,22 @@
     text-decoration: none;
     color: #ffffff; /* Makes the link white */
     text-decoration: none; /* Optional: Removes the underline */
+}
+
+.poster-aux {
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.poster-aux:hover,
+.poster-aux:focus-within {
+    background: #8f1020;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.poster-aux a:hover,
+.poster-aux a:focus-visible {
+    text-decoration: underline;
 }
 
 .poster-badge { left: 12px; }
