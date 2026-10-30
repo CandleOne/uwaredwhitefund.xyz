@@ -25,14 +25,17 @@
 		body { min-width: 320px; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--serif); }
 		a { color: inherit; }
 		a:focus-visible { outline: 3px solid #e8ad42; outline-offset: 4px; }
-		.site-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: min(1240px, calc(100% - 64px)); min-height: 90px; margin: 0 auto; padding: 18px 0; border-bottom: 1px solid var(--rule); }
-		.brand { display: flex; align-items: center; gap: 16px; text-decoration: none; }
-		.brand-mark { display: grid; grid-template-columns: repeat(2, 29px); gap: 3px; color: #fff; font-family: var(--serif); font-size: 1.1rem; font-weight: 700; line-height: 1; text-align: center; }
-		.brand-mark span { display: grid; width: 29px; height: 29px; place-items: center; background: var(--red); }
-		.brand-name { max-width: 310px; font-size: 0.87rem; font-weight: 700; line-height: 1.25; text-transform: uppercase; }
-		.header-link { color: var(--red-dark); font-family: var(--sans); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-decoration-thickness: 1px; text-underline-offset: 5px; text-transform: uppercase; }
+		.utility-bar { min-height: 34px; padding: 6px clamp(20px, 2vw, 36px); background: var(--red); color: #fff; font-family: var(--sans); font-size: 0.85rem; font-weight: 700; }
+		.site-header { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 36px; min-height: 90px; padding: 18px clamp(20px, 2.5vw, 40px); border-bottom: 1px solid var(--rule); }
+		.brand { min-width: max-content; text-decoration: none; }
+		.brand-title { margin: 0; font-size: 1.7rem; line-height: 1.05; }
+		.brand-mark { display: block; width: 200px; max-width: 100%; height: auto; margin-top: 7px; }
+		.nav-list { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px 28px; margin: 0; padding: 0; list-style: none; font-family: var(--sans); }
+		.nav-list a { color: var(--ink); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-decoration: none; text-transform: uppercase; }
+		.nav-list a:hover, .nav-list a[aria-current="page"] { color: var(--red); }
 		main { overflow: hidden; }
-		.hero { width: 100%; margin: 0 auto; padding: clamp(42px, 7vw, 82px) max(32px, calc((100% - 1240px) / 2)) 56px; background: var(--charcoal); color: #fff; }
+		.hero { display: grid; min-height: 305px; place-items: center; padding: 30px clamp(28px, 6vw, 96px); background: var(--charcoal); color: #fff; }
+		.hero-content { width: min(1080px, 100%); padding: 30px 0 26px; border-bottom: 8px solid var(--red); text-align: center; }
 		.eyebrow { display: flex; align-items: center; gap: 14px; margin: 0 0 20px; color: #fff; font-family: var(--sans); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
 		.eyebrow::after { width: 64px; height: 1px; background: var(--red); content: ""; }
 		h1 { max-width: 930px; margin: 0; font-size: clamp(3rem, 8.6vw, 7.7rem); font-weight: 400; letter-spacing: 0; line-height: 0.92; text-transform: uppercase; }
@@ -63,13 +66,23 @@
 		.button:hover { background: transparent; color: #fff; }
 		.button-light { width: fit-content; border-color: rgb(255 255 255 / 70%); background: transparent; color: #fff; }
 		.button-light:hover { background: #fff; color: var(--red-dark); }
-		.footer { display: flex; justify-content: space-between; gap: 24px; width: 100%; margin: 0 auto; padding: 28px max(32px, calc((100% - 1240px) / 2)); background: var(--charcoal); color: #fff; font-family: var(--sans); font-size: 0.76rem; }
+		.footer { padding: 40px 24px 42px; background: var(--charcoal); color: #fff; text-align: center; }
 		.footer p { margin: 0; }
 		.footer a { color: #fff; text-underline-offset: 3px; }
+		.footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; margin: 28px 0; padding: 0; list-style: none; font-family: var(--sans); }
+		.footer-links a { font-size: 0.86rem; font-weight: 700; text-decoration: none; }
+		.footer-note { max-width: 780px; margin: 0 auto; font-family: var(--sans); font-size: 0.86rem; line-height: 1.35; }
 		@media (max-width: 720px) {
 			.site-header, .details-inner, .strategy-note { width: min(100% - 40px, 1240px); }
 			.site-header { min-height: 82px; }
-			.brand-name { max-width: 230px; font-size: 0.72rem; }
+			.brand-mark { width: 170px; }
+			.site-header nav { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; display: none; padding: 18px 22px 24px; border-bottom: 1px solid var(--rule); background: #fff; }
+			.site-header nav.is-open { display: block; }
+			.nav-list { display: grid; gap: 0; }
+			.nav-list li { border-bottom: 1px solid var(--rule); }
+			.nav-list a { display: block; padding: 14px 0; }
+			.menu-toggle { display: block; width: 44px; height: 44px; margin-left: auto; border: 1px solid var(--ink); background: #fff; cursor: pointer; }
+			.menu-toggle span { display: block; width: 20px; height: 2px; margin: 4px auto; background: var(--ink); }
 			.hero { padding-top: 54px; }
 			.hero-bottom { grid-template-columns: 1fr; gap: 24px; }
 			.date-block { padding: 0; border: 0; }
@@ -80,11 +93,7 @@
 		}
 		@media (max-width: 460px) {
 			.site-header, .details-inner, .strategy-note { width: calc(100% - 36px); }
-			.brand { gap: 10px; }
-			.brand-mark { grid-template-columns: repeat(2, 24px); gap: 2px; font-size: 0.95rem; }
-			.brand-mark span { width: 24px; height: 24px; }
-			.brand-name { max-width: 155px; font-size: 0.62rem; }
-			.header-link { max-width: 92px; font-size: 0.65rem; line-height: 1.4; text-align: right; }
+			.brand-mark { width: 150px; }
 			h1 { font-size: clamp(2.55rem, 13vw, 3.8rem); }
 			.fact-list { grid-template-columns: 1fr; }
 			.fact { min-height: 0; padding: 17px 0; }
@@ -95,25 +104,40 @@
 		}
 		@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .button { transition: none; } }
 	</style>
+	<script src="../../site.js" defer></script>
 </head>
 <body>
+	<div class="utility-bar">UWA The University of West Alabama</div>
 	<header class="site-header">
-		<a class="brand" href="../../index.html" aria-label="Red and White Investment Fund home">
-			<span class="brand-mark" aria-hidden="true"><span>R</span><span>W</span><span>I</span><span>F</span></span>
-			<span class="brand-name">West Alabama<br>Red &amp; White Investment Fund</span>
-		</a>
-		<a class="header-link" href="../../index.html">Visit the Fund</a>
+		<div class="brand">
+			<p class="brand-title">Red &amp; White Fund</p>
+			<img class="brand-mark" src="../../assets/uwacollegeofbusiness.png" alt="College of Business">
+		</div>
+		<nav aria-label="Primary navigation">
+			<ul class="nav-list">
+				<li><a href="../../index.html">Home</a></li>
+				<li><a href="../../about.html">About</a></li>
+				<li><a href="../../events.html">Events</a></li>
+				<li><a href="../../leadership.html">Leadership</a></li>
+				<li><a href="../../contact.html">Contact</a></li>
+				<li><a href="../../publications.html">Publications</a></li>
+				<li><a href="../../portfolio.html">Portfolio</a></li>
+				<li><a href="../../media.html">Media</a></li>
+			</ul>
+		</nav>
 	</header>
 	<main>
 		<section class="hero" aria-labelledby="page-title">
-			<p class="eyebrow">West Alabama · Student Trading Competition</p>
-			<h1 id="page-title">Sim Trading<span>Competition</span></h1>
-			<div class="hero-bottom">
-				<p class="hero-copy">Build your strategy. Trade a simulated $100,000 portfolio. Compete for professional recognition and a share of the prize pool.</p>
-				<div class="date-block">
-					<p class="date-label">Registration window</p>
-					<p class="date-value">Nov 1–14</p>
-					<p class="date-year">Registration opens November 1</p>
+			<div class="hero-content">
+				<p class="eyebrow">West Alabama · Student Trading Competition</p>
+				<h1 id="page-title">Sim Trading<span>Competition</span></h1>
+				<div class="hero-bottom">
+					<p class="hero-copy">Build your strategy. Trade a simulated $100,000 portfolio. Compete for professional recognition and a share of the prize pool.</p>
+					<div class="date-block">
+						<p class="date-label">Registration window</p>
+						<p class="date-value">Nov 1–14</p>
+						<p class="date-year">Registration opens November 1</p>
+					</div>
 				</div>
 			</div>
 		</section>
@@ -144,8 +168,15 @@
 		</section>
 	</main>
 	<footer class="footer">
-		<p>West Alabama Red &amp; White Investment Fund · Sim Trading Competition</p>
-		<p><a href="../../contact.html">Contact the Fund</a></p>
+		<p class="footer-wordmark">UWA The University of West Alabama</p>
+		<ul class="footer-links">
+			<li><a href="../../login.html">Login</a></li>
+			<li><a href="../../contact.html">Contact</a></li>
+			<li><a href="../../privacy.html">Privacy</a></li>
+			<li><a href="../../terms.html">Terms of Use</a></li>
+			<li><a href="#">© 2026 The University of West Alabama</a></li>
+		</ul>
+		<p class="footer-note">UWA is an Equal Employment/Equal Educational Opportunity Institution dedicated to providing equal opportunities and equal access to all individuals regardless of race, color, religion, ethnic or national origin, sex, age, disability, religion, and veteran’s status.</p>
 	</footer>
 </body>
 </html>
