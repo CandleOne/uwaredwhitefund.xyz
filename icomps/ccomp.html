@@ -3,115 +3,9 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="theme-color" content="#a91f31">
-	<meta name="description" content="Compete in the West Alabama Red & White Investment Fund Sim Trading Competition. Registration runs November 1–14.">
-	<title>Sim Trading Competition | Red &amp; White Investment Fund</title>
-	<style>
-		:root {
-			color-scheme: light;
-			--red: #ab1f2d;
-			--red-dark: #9a1c28;
-			--paper: #ffffff;
-			--ink: #20272d;
-			--muted: #687078;
-			--rule: #e4e7e5;
-			--charcoal: #2d2f31;
-			--serif: Georgia, "Times New Roman", serif;
-			--sans: Arial, sans-serif;
-		}
-
-		* { box-sizing: border-box; }
-		html { scroll-behavior: smooth; }
-		body { min-width: 320px; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--serif); }
-		a { color: inherit; }
-		a:focus-visible { outline: 3px solid #e8ad42; outline-offset: 4px; }
-		.utility-bar { min-height: 34px; padding: 6px clamp(20px, 2vw, 36px); background: var(--red); color: #fff; font-family: var(--sans); font-size: 0.85rem; font-weight: 700; }
-		.site-header { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 36px; min-height: 90px; padding: 18px clamp(20px, 2.5vw, 40px); border-bottom: 1px solid var(--rule); }
-		.brand { min-width: max-content; text-decoration: none; }
-		.brand-title { margin: 0; font-size: 1.7rem; line-height: 1.05; }
-		.brand-mark { display: block; width: 200px; max-width: 100%; height: auto; margin-top: 7px; }
-		.nav-list { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px 28px; margin: 0; padding: 0; list-style: none; font-family: var(--sans); }
-		.nav-list a { color: var(--ink); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-decoration: none; text-transform: uppercase; }
-		.nav-list a:hover, .nav-list a[aria-current="page"] { color: var(--red); }
-		main { overflow: hidden; }
-		.hero { display: grid; min-height: 305px; place-items: center; padding: 30px clamp(28px, 6vw, 96px); background: var(--charcoal); color: #fff; }
-		.hero-content { width: min(1080px, 100%); padding: 30px 0 26px; border-bottom: 8px solid var(--red); text-align: center; }
-		.eyebrow { display: flex; align-items: center; gap: 14px; margin: 0 0 20px; color: #fff; font-family: var(--sans); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
-		.eyebrow::after { width: 64px; height: 1px; background: var(--red); content: ""; }
-		h1 { max-width: 930px; margin: 0; font-size: clamp(3rem, 8.6vw, 7.7rem); font-weight: 400; letter-spacing: 0; line-height: 0.92; text-transform: uppercase; }
-		h1 span { display: block; color: var(--red); }
-		.hero-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, 0.43fr); align-items: end; gap: 30px; margin-top: 40px; padding-top: 25px; border-top: 5px solid var(--red); }
-		.hero-copy { max-width: 720px; margin: 0; font-size: clamp(1.25rem, 2.4vw, 1.8rem); line-height: 1.45; }
-		.date-block { padding-left: 24px; border-left: 1px solid var(--rule); }
-		.date-label { margin: 0 0 8px; color: var(--muted); font-family: var(--sans); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
-		.date-value { margin: 0; color: var(--red); font-size: clamp(1.8rem, 3.2vw, 2.5rem); font-weight: 700; line-height: 1; white-space: nowrap; }
-		.date-year { margin: 8px 0 0; color: var(--muted); font-family: var(--sans); font-size: 0.78rem; }
-		.details { background: #f2f3f3; }
-		.details-inner { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: clamp(34px, 7vw, 100px); width: min(1240px, calc(100% - 64px)); margin: 0 auto; padding: 64px 0 70px; }
-		.details-intro h2 { max-width: 370px; margin: 0 0 18px; font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 400; line-height: 1.02; }
-		.details-intro p { max-width: 380px; margin: 0; color: var(--muted); font-family: var(--sans); font-size: 0.96rem; line-height: 1.7; }
-		.fact-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
-		.fact { min-height: 145px; padding: 18px 22px 22px 0; border-top: 1px solid #bdb3a8; }
-		.fact:nth-child(odd) { margin-right: 22px; }
-		.fact:nth-child(even) { padding-left: 22px; border-left: 1px solid #bdb3a8; }
-		.fact-break { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-right: 0 !important; padding-left: 0 !important; border-top: 1px solid #bdb3a8; border-left: 0 !important; }
-		.fact-break .fact { border-top: 0; }
-		.fact-break .fact:first-child { margin-right: 22px; }
-		.fact-break .fact:last-child { padding-left: 22px; border-left: 1px solid #bdb3a8; }
-		.fact dt { margin-bottom: 10px; color: var(--red-dark); font-family: var(--sans); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
-		.fact dd { margin: 0; font-size: clamp(1.2rem, 2.2vw, 1.65rem); line-height: 1.28; }
-		.strategy-note { width: min(1240px, calc(100% - 64px)); margin: 0 auto; padding: 27px 0 32px; color: var(--red-dark); font-size: clamp(1.15rem, 2.2vw, 1.6rem); font-style: italic; line-height: 1.45; }
-		.action-band { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 44px; padding: 38px max(32px, calc((100% - 1240px) / 2)); background: var(--red); color: #fff; }
-		.action-main { display: flex; align-items: center; justify-content: space-between; gap: 28px; }
-		.action-main h2 { max-width: 410px; margin: 0; font-size: clamp(1.7rem, 3.4vw, 2.65rem); font-weight: 400; line-height: 1.1; }
-		.action-side { display: flex; flex-direction: column; justify-content: center; padding-left: 34px; border-left: 1px solid rgb(255 255 255 / 45%); }
-		.action-side p { max-width: 400px; margin: 0 0 16px; font-size: 1.14rem; line-height: 1.5; }
-		.button { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 12px 18px; border: 1px solid #fff; background: #fff; color: var(--red-dark); font-family: var(--sans); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.09em; text-align: center; text-decoration: none; text-transform: uppercase; transition: background-color 160ms ease, color 160ms ease; }
-		.button:hover { background: transparent; color: #fff; }
-		.button-light { width: fit-content; border-color: rgb(255 255 255 / 70%); background: transparent; color: #fff; }
-		.button-light:hover { background: #fff; color: var(--red-dark); }
-		.footer { padding: 40px 24px 42px; background: var(--charcoal); color: #fff; text-align: center; }
-		.footer p { margin: 0; }
-		.footer a { color: #fff; text-underline-offset: 3px; }
-		.footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; margin: 28px 0; padding: 0; list-style: none; font-family: var(--sans); }
-		.footer-links a { font-size: 0.86rem; font-weight: 700; text-decoration: none; }
-		.footer-note { max-width: 780px; margin: 0 auto; font-family: var(--sans); font-size: 0.86rem; line-height: 1.35; }
-		@media (max-width: 720px) {
-			.site-header, .details-inner, .strategy-note { width: min(100% - 40px, 1240px); }
-			.site-header { min-height: 82px; }
-			.brand-mark { width: 170px; }
-			.site-header nav { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; display: none; padding: 18px 22px 24px; border-bottom: 1px solid var(--rule); background: #fff; }
-			.site-header nav.is-open { display: block; }
-			.nav-list { display: grid; gap: 0; }
-			.nav-list li { border-bottom: 1px solid var(--rule); }
-			.nav-list a { display: block; padding: 14px 0; }
-			.menu-toggle { display: block; width: 44px; height: 44px; margin-left: auto; border: 1px solid var(--ink); background: #fff; cursor: pointer; }
-			.menu-toggle span { display: block; width: 20px; height: 2px; margin: 4px auto; background: var(--ink); }
-			.hero { padding-top: 54px; }
-			.hero-bottom { grid-template-columns: 1fr; gap: 24px; }
-			.date-block { padding: 0; border: 0; }
-			.details-inner { grid-template-columns: 1fr; gap: 32px; padding: 44px 0 50px; }
-			.details-intro h2 { max-width: 600px; }
-			.action-band { grid-template-columns: 1fr; gap: 26px; padding: 32px 20px; }
-			.action-side { padding: 24px 0 0; border-top: 1px solid rgb(255 255 255 / 45%); border-left: 0; }
-		}
-		@media (max-width: 460px) {
-			.site-header, .details-inner, .strategy-note { width: calc(100% - 36px); }
-			.brand-mark { width: 150px; }
-			h1 { font-size: clamp(2.55rem, 13vw, 3.8rem); }
-			.fact-list { grid-template-columns: 1fr; }
-			.fact { min-height: 0; padding: 17px 0; }
-			.fact:nth-child(odd) { margin-right: 0; }
-			.fact:nth-child(even) { padding-left: 0; border-left: 0; }
-			.fact-break { grid-template-columns: 1fr; }
-			.fact-break .fact:first-child { margin-right: 0; }
-			.fact-break .fact:last-child { padding-left: 0; border-left: 0; }
-			.action-main { align-items: flex-start; flex-direction: column; }
-			.footer { flex-direction: column; }
-		}
-		@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .button { transition: none; } }
-	</style>
-	<script src="../../site.js" defer></script>
+	<title>Red &amp; White Fund</title>
+	<link rel="stylesheet" href="site.css">
+	<script src="site.js" defer></script>
 </head>
 <body>
 	<div class="utility-bar">UWA The University of West Alabama</div>
@@ -134,61 +28,32 @@
 			</ul>
 		</nav>
 	</header>
-	<main>
-		<section class="hero" aria-labelledby="page-title">
+
+	<main id="home">
+		<section class="hero" aria-labelledby="hero-heading">
 			<div class="hero-content">
-				<p class="eyebrow">West Alabama · Student Trading Competition</p>
-				<h1 id="hero-heading">Sim Trading<span class="hero-title-red">Competition</span></h1>
-				<div class="hero-bottom">
-					<p class="hero-copy">Build your strategy. Trade a simulated $100,000 portfolio. Compete for professional recognition and a share of the prize pool.</p>
-					<div class="date-block">
-						<p class="date-label">Registration window</p>
-						<p class="date-value">Nov 1–14</p>
-						<p class="date-year">Registration opens November 1</p>
-					</div>
-				</div>
+				<h1 id="hero-heading"><span class="hero-title-red">Red</span> &amp; White<br>Fund</h1>
 			</div>
 		</section>
-		<section class="details" aria-labelledby="format-heading">
-			<div class="details-inner">
-				<div class="details-intro">
-					<h2 id="format-heading">Put your investment thinking to work.</h2>
-					<p>Compete on your own or bring a team. Over three months, you’ll manage a simulated portfolio and put your trading strategy in front of experienced professionals.</p>
-				</div>
-				<dl class="fact-list">
-					<div class="fact"><dt>Starting portfolio</dt><dd>$100,000 simulated capital</dd></div>
-					<div class="fact"><dt>Competition length</dt><dd>Three months</dd></div>
-					<div class="fact"><dt>Team format</dt><dd>Solo or teams of up to four</dd></div>
-					<div class="fact"><dt>Prize Pool</dt><dd>$500</dd></div>
-					<div class="fact-break">
-						<div class="fact"><dt>Most profitable trader</dt><dd>$300 prize</dd></div>
-						<div class="fact"><dt>Most technically interesting strategy</dt><dd>$200 prize, selected by the panel judges</dd></div>
-					</div>
-				</dl>
-			</div>
-		</section>
-		<p class="strategy-note">Have your trading strategy reviewed by a panel of professional traders and industry professionals.</p>
-		<section class="action-band" aria-label="Registration and student fund application">
-			<div class="action-main">
-				<h2>Ready to compete?</h2>
-				<a class="button" href="mailto:uwaredandwhitefund@gmail.com?subject=Sim%20Trading%20Competition%20Registration">Register by email</a>
-			</div>
-			<div class="action-side">
-				<p>Interested in joining our full-time student investment team?</p>
-				<a class="button button-light" href="../../application.html">Submit an application</a>
-			</div>
-		</section>
+
+		<section class="page-content" id="about" aria-labelledby="intro-heading">
+			<h2 id="intro-heading">West Alabama College of Business Student Managed Investment Fund</h2>
+			<aside class="home-apply-widget" aria-label="Join the Red and White Fund">
+				<p>Interested in joining our team?</p>
+				<a class="apply-button" href="application.html">Apply Here!</a>
+			</aside>
+			<img class="image-feature" src="assets/DSC_3587-1024x683.jpg" alt="Students gathered outdoors">
+
+            <h3 id="about-heading">About Us</h3>
+            <p>The Red & White Fund is a student-managed investment fund at the West Alabama College of Business. Our mission is to provide students with hands-on experience in managing real investment portfolios while fostering a deep understanding of financial markets and investment strategies.</p>
+            <h3 id="vision-heading">Our Vision</h3>
+            <p>Our vision is to cultivate the next generation of investment professionals by providing a rigorous, hands-on learning environment that emphasizes ethical decision-making, analytical thinking, and strategic investment management.</p>
+            <h3 id="mission-heading">Our Mission</h3>
+            <p>Our mission is to empower students with the knowledge, skills, and experience necessary to excel in the field of investment management. We aim to bridge the gap between academic theory and real-world practice, preparing our students for successful careers in finance.</p>
+        </section>
 	</main>
-	<footer class="footer">
-		<p class="footer-wordmark">UWA The University of West Alabama</p>
-		<ul class="footer-links">
-			<li><a href="../../login.html">Login</a></li>
-			<li><a href="../../contact.html">Contact</a></li>
-			<li><a href="../../privacy.html">Privacy</a></li>
-			<li><a href="../../terms.html">Terms of Use</a></li>
-			<li><a href="#">© 2026 The University of West Alabama</a></li>
-		</ul>
-		<p class="footer-note">UWA is an Equal Employment/Equal Educational Opportunity Institution dedicated to providing equal opportunities and equal access to all individuals regardless of race, color, religion, ethnic or national origin, sex, age, disability, religion, and veteran’s status.</p>
+	<footer class="site-footer">
+		<div class="footer-main"><p class="footer-wordmark">UWA The University of West Alabama</p><ul class="footer-links"><li><a href="login.html">Login</a></li><li><a href="https://www.uwa.edu/privacy/">Privacy</a></li><li><a href="https://policies.uwa.edu/hc/en-us/articles/21834065539351-UWA-Acceptable-Use-Policy">Terms of Use</a></li><li><a>© 2026 The University of West Alabama</a></li></ul><p class="footer-note">UWA is an Equal Employment/Equal Educational Opportunity Institution dedicated to providing equal opportunities and equal access to all individuals regardless of race, color, religion, ethnic or national origin, sex (including pregnancy), genetic information, age, disability, religion, and veteran’s status. As required by Title IX, UWA prohibits sex discrimination in any education program or activity that it operates. Individuals may report concerns or questions to UWA’s Assistant Vice President and Senior Title IX Coordinator. The Title IX notice of nondiscrimination is located at <a href="https://www.uwa.edu/title-ix/">uwa.edu/title-ix/</a>.</p></div>
 	</footer>
 </body>
 </html>
