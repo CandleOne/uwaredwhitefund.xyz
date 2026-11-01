@@ -1,0 +1,19 @@
+name = "red-white-competition-api"
+main = "competition-worker.js"
+compatibility_date = "2026-10-31"
+workers_dev = true
+
+[triggers]
+crons = ["*/5 13-21 * * 1-5"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "competition"
+database_id = "ab2631b0-b898-4bcb-aead-db2ab7dcf21f"
+
+[vars]
+ALPACA_BROKER_BASE = "https://broker-api.sandbox.alpaca.markets"
+ALLOWED_ORIGINS = "https://uwaredwhitefund.xyz,http://localhost:8000,http://127.0.0.1:8000"
+ACCOUNT_EMAIL_DOMAIN = "teams.uwaredwhitefund.xyz"
+
+# Add REG_OPEN, REG_CLOSE, COMP_START, and COMP_END after the schedule is approved.

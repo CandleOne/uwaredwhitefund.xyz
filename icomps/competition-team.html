@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://red-white-competition-api.rwifc.workers.dev" />
+    <title>Team Dashboard | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="../site.css?v=portfolio-widget" />
+    <link rel="stylesheet" href="competition.css" />
+    <script src="../site.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+      <div class="brand">
+        <p class="brand-title">Red &amp; White Fund</p>
+        <img class="brand-mark" src="../assets/uwacollegeofbusiness.png" alt="College of Business" />
+      </div>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-list">
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="ccomp.html">Competition info</a></li>
+          <li><a href="../about.html">About</a></li>
+          <li><a href="../events.html">Events</a></li>
+          <li><a href="../leadership.html">Leadership</a></li>
+          <li><a href="../contact.html">Contact</a></li>
+          <li><a href="../publications.html">Publications</a></li>
+          <li><a href="../portfolio.html">Portfolio</a></li>
+          <li><a href="../media.html">Media</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-content"><h1 data-title>Team dashboard</h1></div>
+      </section>
+      <section class="competition-page" aria-labelledby="team-heading">
+        <h2 id="team-heading" class="sr-only">Team portfolio</h2>
+        <div class="competition-banner"><p data-phase>Sign in with your team passcode.</p></div>
+        <p class="dashboard-error" data-error role="alert" hidden></p>
+
+        <form class="competition-form" data-signin hidden>
+          <label>Team ID <input name="teamId" type="text" autocomplete="off" required /></label>
+          <label>Team passcode <input name="teamKey" type="password" autocomplete="off" required /></label>
+          <button type="submit">Open dashboard</button>
+        </form>
+
+        <div data-dashboard hidden>
+          <dl class="team-summary">
+            <div><dt>Equity</dt><dd data-equity>—</dd></div>
+            <div><dt>Total return</dt><dd data-return>—</dd></div>
+            <div><dt>Cash</dt><dd data-cash>—</dd></div>
+            <div><dt>Buying power</dt><dd data-buying-power>—</dd></div>
+            <div><dt>Day change</dt><dd data-day-change>—</dd></div>
+          </dl>
+
+          <form class="competition-form order-ticket" data-order-form novalidate>
+            <h3>Place an order</h3>
+            <div class="row">
+              <label>Symbol <input name="symbol" type="text" maxlength="7" required autocapitalize="characters" /></label>
+              <label>Side
+                <select name="side"><option value="buy">Buy</option><option value="sell">Sell</option></select>
+              </label>
+              <label>Shares <input name="qty" type="number" min="1" step="1" required /></label>
+              <label>Type
+                <select name="type"><option value="market">Market</option><option value="limit">Limit</option></select>
+              </label>
+              <label data-limit-wrap hidden>Limit price <input name="limitPrice" type="number" min="0.01" step="0.01" /></label>
+            </div>
+            <button type="submit" data-order-submit>Submit order</button>
+            <p class="competition-message" data-order-message role="status"></p>
+            <p class="form-hint">Orders are day orders. Short selling isn't allowed. Orders placed outside market hours queue until the next open.</p>
+          </form>
+
+          <h3>Positions</h3>
+          <div class="table-scroll">
+            <table class="competition-table">
+              <thead><tr><th scope="col">Symbol</th><th scope="col">Side</th><th scope="col">Shares</th><th scope="col">Price</th><th scope="col">Market value</th><th scope="col">Unrealized P/L</th><th scope="col">Today</th></tr></thead>
+              <tbody data-positions></tbody>
+            </table>
+          </div>
+
+          <h3>Recent orders</h3>
+          <div class="table-scroll">
+            <table class="competition-table">
+              <thead><tr><th scope="col">Symbol</th><th scope="col">Side</th><th scope="col">Type</th><th scope="col">Shares</th><th scope="col">Filled</th><th scope="col">Status</th><th scope="col">Submitted</th></tr></thead>
+              <tbody data-orders></tbody>
+            </table>
+          </div>
+
+          <form class="competition-form" data-strategy-form novalidate>
+            <h3>Strategy writeup</h3>
+            <label>Describe your strategy for the judges (50 to 4,000 characters)
+              <textarea name="body" rows="9" maxlength="4000"></textarea>
+            </label>
+            <button type="submit">Save writeup</button>
+            <p class="competition-message" data-strategy-message role="status"></p>
+          </form>
+        </div>
+
+        <p class="paper-disclaimer">
+          Simulated trading with no real money. Keep your team passcode private.
+        </p>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-main">
+        <p class="footer-wordmark">UWA The University of West Alabama</p>
+        <ul class="footer-links">
+          <li><a href="../login.html">Login</a></li>
+          <li><a href="../privacy.html">Privacy</a></li>
+          <li><a href="../terms.html">Terms of Use</a></li>
+          <li><a href="../index.html">&copy; 2026 The University of West Alabama</a></li>
+        </ul>
+      </div>
+    </footer>
+    <script src="competition-common.js"></script>
+    <script src="competition-team.js"></script>
+  </body>
+</html>

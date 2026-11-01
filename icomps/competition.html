@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="alpaca-api-base" content="https://red-white-competition-api.rwifc.workers.dev" />
+    <title>Competition Leaderboard | Red &amp; White Fund</title>
+    <link rel="stylesheet" href="../site.css?v=portfolio-widget" />
+    <link rel="stylesheet" href="competition.css" />
+    <script src="../site.js" defer></script>
+  </head>
+  <body>
+    <div class="utility-bar">UWA The University of West Alabama</div>
+    <header class="site-header">
+      <div class="brand">
+        <p class="brand-title">Red &amp; White Fund</p>
+        <img class="brand-mark" src="../assets/uwacollegeofbusiness.png" alt="College of Business" />
+      </div>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-list">
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="ccomp.html">Competition info</a></li>
+          <li><a href="../about.html">About</a></li>
+          <li><a href="../events.html">Events</a></li>
+          <li><a href="../leadership.html">Leadership</a></li>
+          <li><a href="../contact.html">Contact</a></li>
+          <li><a href="../publications.html">Publications</a></li>
+          <li><a href="../portfolio.html">Portfolio</a></li>
+          <li><a href="../media.html">Media</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-content"><h1>Competition leaderboard</h1></div>
+      </section>
+      <section class="competition-page" aria-labelledby="board-heading">
+        <h2 id="board-heading">Red&amp;White Investment Competition</h2>
+        <div class="competition-banner"><p data-phase>Loading…</p></div>
+        <p class="dashboard-error" data-error role="alert" hidden></p>
+
+        <div class="table-scroll">
+          <table class="competition-table">
+            <caption class="sr-only">Teams ranked by total return</caption>
+            <thead>
+              <tr><th scope="col">Rank</th><th scope="col">Team</th><th scope="col">Return</th><th scope="col">Equity</th><th scope="col">Day change</th></tr>
+            </thead>
+            <tbody data-board></tbody>
+          </table>
+        </div>
+
+        <div class="chart-wrap" data-chart-wrap hidden>
+          <h3>Return over time, top five teams</h3>
+          <svg data-chart viewBox="0 0 800 320" role="img" aria-label="Line chart of total return for the top five teams"></svg>
+          <ul class="chart-legend" data-legend></ul>
+        </div>
+
+        <p><a href="competition-register.html" data-register-link>Register a team</a> · <a href="competition-team.html">Open your team dashboard</a></p>
+        <p class="paper-disclaimer">
+          Simulated trading. Rankings use total return on a $100,000 starting portfolio and update every few minutes while markets are open.
+        </p>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-main">
+        <p class="footer-wordmark">UWA The University of West Alabama</p>
+        <ul class="footer-links">
+          <li><a href="../login.html">Login</a></li>
+          <li><a href="../privacy.html">Privacy</a></li>
+          <li><a href="../terms.html">Terms of Use</a></li>
+          <li><a href="../index.html">&copy; 2026 The University of West Alabama</a></li>
+        </ul>
+      </div>
+    </footer>
+    <script src="competition-common.js"></script>
+    <script src="competition.js"></script>
+  </body>
+</html>

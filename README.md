@@ -147,6 +147,20 @@ Open `http://127.0.0.1:8000/login.html`. Local pages automatically use port
 8789. Local first-manager setup is enabled by default; production disables it.
 The Flask development server is only for local use.
 
+## Simulated investment competition
+
+The competition information, leaderboard, team registration, and dashboard
+pages are under `icomps/`. The frontend calls `/v1/competition` on its
+configured API base. That API is a separate Cloudflare Worker with a D1
+database, defined by `icomps/competition-worker.js` and `icomps/schema.sql`;
+the existing Fly.io Flask service does not implement these routes. Follow the
+Worker setup notes at the top of `icomps/competition-worker.js` and configure
+the frontend API base for the Worker before enabling registration.
+
+The competition worker is restricted to Alpaca's HTTPS sandbox host. Its
+account identity and funding details are sandbox placeholders; do not remove
+the host restriction or use real-money credentials.
+
 ## Tests
 
 ```sh
