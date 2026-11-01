@@ -425,7 +425,7 @@ async function saveStrategy(req, env, team) {
 
 async function fetchHandler(req, env) {
   const url = new URL(req.url);
-  if (!url.pathname.startsWith("/v1/competition")) return null;
+  if (!url.pathname.startsWith("/v1/competition")) return fail(req, env, 404, "Not found.");
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(req, env) });
 
   const path = url.pathname.replace("/v1/competition", "") || "/";
