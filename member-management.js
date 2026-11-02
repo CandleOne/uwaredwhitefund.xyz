@@ -81,6 +81,11 @@ function showPosterUploadMessage(text, isError = false) {
   posterUploadMessage.classList.toggle("is-error", isError);
 }
 
+function formatEventDate(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 function renderEventList(events) {
   eventList.replaceChildren();
   eventsById = new Map(events.map((event) => [String(event.id), event]));
@@ -100,7 +105,7 @@ function renderEventList(events) {
 
     const details = document.createElement("p");
     details.className = "event-admin-item-details";
-    details.textContent = event.details;
+    details.textContent = event.event_date ? `${formatEventDate(event.event_date)} • ${event.details}` : event.details;
     description.append(details);
 
     const actions = document.createElement("div");
@@ -372,6 +377,7 @@ function startEditingEvent(eventToEdit) {
   eventForm.elements.namedItem("title").value = eventToEdit.title;
   eventForm.elements.namedItem("details").value = eventToEdit.details;
   eventForm.elements.namedItem("badge").value = eventToEdit.badge;
+  eventForm.elements.namedItem("event_date").value = eventToEdit.event_date || "";
   eventForm.elements.namedItem("link_label").value = eventToEdit.link_label;
 
   if (![...posterSelect.options].some((option) => option.value === eventToEdit.image_url)) {
@@ -416,7 +422,7 @@ eventForm.addEventListener("submit", async (event) => {
   const values = new FormData(eventForm);
   const selectedLink = values.get("link_url");
   const payload = Object.fromEntries(
-    ["title", "details", "image_url", "badge", "link_label"].map((field) => [
+    ["title", "details", "image_url", "badge", "link_label", "event_date"].map((field) => [
       field,
       values.get(field),
     ]),

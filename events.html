@@ -41,6 +41,20 @@
         </section>
 
         <div class="page-content events-page">
+            <section class="calendar-section" id="calendar" aria-labelledby="calendar-heading">
+                <h2 class="library-title" id="calendar-heading">Event Calendar</h2>
+                <div class="calendar" data-event-calendar>
+                    <div class="calendar-controls">
+                        <button type="button" class="calendar-nav" data-calendar-prev aria-label="Previous month">&#8249;</button>
+                        <h3 class="calendar-month" data-calendar-title aria-live="polite"></h3>
+                        <button type="button" class="calendar-nav" data-calendar-next aria-label="Next month">&#8250;</button>
+                        <button type="button" class="calendar-today" data-calendar-today>Today</button>
+                    </div>
+                    <div class="calendar-grid" data-calendar-grid role="grid"></div>
+                    <div class="calendar-day-events" data-calendar-day-events aria-live="polite"></div>
+                </div>
+            </section>
+
             <section class="library-section" aria-labelledby="library-heading">
                 <h2 class="library-title" id="library-heading">Event Library</h2>
                 <div class="library-grid" id="libraryGrid" aria-live="polite">
@@ -53,7 +67,7 @@
                 <p>Contact our Chief Marketing Officer for more information about upcoming events and activities.</p>
                 <div class="contact-info">
                     <a href="mailto:social@deltachilivin.org" class="contact-btn">Contact Chief Marketing Officer</a>
-                    <a href="#" class="contact-btn secondary">View Full Event Calendar</a>
+                    <a href="#calendar" class="contact-btn secondary">View Full Event Calendar</a>
                 </div>
             </section>
         </div>

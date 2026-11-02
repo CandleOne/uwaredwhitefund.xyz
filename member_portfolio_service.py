@@ -10,6 +10,7 @@ import sqlite3
 import time
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlsplit
@@ -193,7 +194,8 @@ def create_app(settings: Settings | None = None) -> Flask:
                     badge TEXT NOT NULL DEFAULT '',
                     link_label TEXT NOT NULL DEFAULT '',
                     link_url TEXT NOT NULL DEFAULT '',
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    event_date TEXT NOT NULL DEFAULT ''
                 );
                 CREATE TABLE IF NOT EXISTS applications (
                     id INTEGER PRIMARY KEY,
@@ -206,6 +208,9 @@ def create_app(settings: Settings | None = None) -> Flask:
                     VALUES ('default_portfolio_enabled', 'true');
                 """
             )
+            event_columns = {row[1] for row in connection.execute("PRAGMA table_info(events)")}
+            if "event_date" not in event_columns:
+                connection.execute("ALTER TABLE events ADD COLUMN event_date TEXT NOT NULL DEFAULT ''")
             connection.execute("BEGIN IMMEDIATE")
             seed_marker = connection.execute(
                 "SELECT 1 FROM application_settings WHERE setting_key = 'event_library_seeded'"
@@ -512,7 +517,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     def validated_event_values(payload: object) -> tuple[dict[str, str] | None, Response | None]:
         if not isinstance(payload, dict):
             return None, (jsonify(error="A JSON request body is required."), 400)
-        fields = ("title", "details", "image_url", "badge", "link_label", "link_url")
+        fields = ("title", "details", "image_url", "badge", "link_label", "link_url", "event_date")
         values = {
             field: payload.get(field, "").strip() if isinstance(payload.get(field, ""), str) else ""
             for field in fields
@@ -520,11 +525,18 @@ def create_app(settings: Settings | None = None) -> Flask:
         missing = [field for field in ("title", "details", "image_url") if not values[field]]
         if missing:
             return None, (jsonify(error=f"Missing required field(s): {', '.join(missing)}."), 400)
-        limits = {"title": 120, "details": 240, "image_url": 500, "badge": 100, "link_label": 40, "link_url": 500}
+        limits = {"title": 120, "details": 240, "image_url": 500, "badge": 100, "link_label": 40, "link_url": 500, "event_date": 10}
         if any(len(values[field]) > limit for field, limit in limits.items()):
             return None, (jsonify(error="One or more event fields exceed their maximum length."), 400)
         if not safe_event_url(values["image_url"]):
             return None, (jsonify(error="Poster images must use an HTTPS URL or a site-relative path."), 400)
+        if values["event_date"]:
+            try:
+                parsed_date = datetime.strptime(values["event_date"], "%Y-%m-%d")
+            except ValueError:
+                return None, (jsonify(error="Event dates must use the YYYY-MM-DD format."), 400)
+            if parsed_date.strftime("%Y-%m-%d") != values["event_date"]:
+                return None, (jsonify(error="Event dates must use the YYYY-MM-DD format."), 400)
         if bool(values["link_label"]) != bool(values["link_url"]):
             return None, (jsonify(error="Provide both a link label and a link URL, or leave both blank."), 400)
         if values["link_url"] and not safe_event_url(values["link_url"]):
@@ -534,7 +546,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.get("/v1/events")
     def list_events() -> Response:
         rows = database().execute(
-            """SELECT id, title, details, image_url, badge, link_label, link_url
+            """SELECT id, title, details, image_url, badge, link_label, link_url, event_date
                FROM events ORDER BY id"""
         ).fetchall()
         events = []
@@ -670,10 +682,10 @@ def create_app(settings: Settings | None = None) -> Flask:
         if validation_error:
             return validation_error
         assert values is not None
-        fields = ("title", "details", "image_url", "badge", "link_label", "link_url")
+        fields = ("title", "details", "image_url", "badge", "link_label", "link_url", "event_date")
         cursor = database().execute(
-            """INSERT INTO events (title, details, image_url, badge, link_label, link_url)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO events (title, details, image_url, badge, link_label, link_url, event_date)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             tuple(values[field] for field in fields),
         )
         database().commit()
@@ -695,7 +707,7 @@ def create_app(settings: Settings | None = None) -> Flask:
         assert values is not None
         cursor = database().execute(
             """UPDATE events
-               SET title = ?, details = ?, image_url = ?, badge = ?, link_label = ?, link_url = ?
+               SET title = ?, details = ?, image_url = ?, badge = ?, link_label = ?, link_url = ?, event_date = ?
                WHERE id = ?""",
             (
                 values["title"],
@@ -704,6 +716,7 @@ def create_app(settings: Settings | None = None) -> Flask:
                 values["badge"],
                 values["link_label"],
                 values["link_url"],
+                values["event_date"],
                 event_id,
             ),
         )

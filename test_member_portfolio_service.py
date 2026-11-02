@@ -155,6 +155,7 @@ class MemberServiceTest(unittest.TestCase):
             "badge": "Registration open",
             "link_label": "Learn more",
             "link_url": "https://events.example.com/details",
+            "event_date": "2026-11-20",
         }
         self.assertEqual(
             self.client.put(
@@ -172,9 +173,18 @@ class MemberServiceTest(unittest.TestCase):
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.json["event"], {"id": event_id, **updated_payload})
         self.assertEqual(
-            anonymous.get("/v1/events").json["events"][-1]["title"],
-            "Updated Public Event",
+            anonymous.get("/v1/events").json["events"][-1]["event_date"],
+            "2026-11-20",
         )
+        for bad_date in ("2026-02-30", "11/20/2026", "not-a-date"):
+            self.assertEqual(
+                self.client.put(
+                    f"/v1/events/{event_id}",
+                    json={**updated_payload, "event_date": bad_date},
+                    headers={**self.origin, "X-CSRF-Token": token},
+                ).status_code,
+                400,
+            )
         invalid_update = {**updated_payload, "link_url": "javascript:alert(1)"}
         rejected_update = self.client.put(
             f"/v1/events/{event_id}",
