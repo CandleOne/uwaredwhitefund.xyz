@@ -171,11 +171,31 @@ class MemberServiceTest(unittest.TestCase):
             headers={**self.origin, "X-CSRF-Token": token},
         )
         self.assertEqual(updated.status_code, 200)
-        self.assertEqual(updated.json["event"], {"id": event_id, **updated_payload})
+        self.assertEqual(updated.json["event"], {"id": event_id, "event_end_date": "", **updated_payload})
         self.assertEqual(
             anonymous.get("/v1/events").json["events"][-1]["event_date"],
             "2026-11-20",
         )
+        ranged = self.client.put(
+            f"/v1/events/{event_id}",
+            json={**updated_payload, "event_end_date": "2026-11-24"},
+            headers={**self.origin, "X-CSRF-Token": token},
+        )
+        self.assertEqual(ranged.status_code, 200)
+        self.assertEqual(ranged.json["event"]["event_end_date"], "2026-11-24")
+        for bad_range in (
+            {"event_end_date": "2026-11-19"},
+            {"event_date": "", "event_end_date": "2026-11-24"},
+            {"event_end_date": "2028-11-24"},
+        ):
+            self.assertEqual(
+                self.client.put(
+                    f"/v1/events/{event_id}",
+                    json={**updated_payload, **bad_range},
+                    headers={**self.origin, "X-CSRF-Token": token},
+                ).status_code,
+                400,
+            )
         for bad_date in ("2026-02-30", "11/20/2026", "not-a-date"):
             self.assertEqual(
                 self.client.put(

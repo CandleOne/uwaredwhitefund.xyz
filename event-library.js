@@ -170,8 +170,14 @@ function renderCalendar(events) {
   if (!calendarRoot) return;
   eventsByDate = new Map();
   events.filter((event) => event.event_date).forEach((event) => {
-    if (!eventsByDate.has(event.event_date)) eventsByDate.set(event.event_date, []);
-    eventsByDate.get(event.event_date).push(event);
+    const [sy, sm, sd] = event.event_date.split("-").map(Number);
+    const end = event.event_end_date || event.event_date;
+    for (let day = new Date(sy, sm - 1, sd), i = 0; i < 366; i += 1, day.setDate(day.getDate() + 1)) {
+      const key = dateKey(day.getFullYear(), day.getMonth(), day.getDate());
+      if (key > end) break;
+      if (!eventsByDate.has(key)) eventsByDate.set(key, []);
+      eventsByDate.get(key).push(event);
+    }
   });
   // Open on the nearest upcoming month that has events, if the current month is empty.
   const currentPrefix = dateKey(calendarYear, calendarMonth, 1).slice(0, 7);

@@ -105,7 +105,10 @@ function renderEventList(events) {
 
     const details = document.createElement("p");
     details.className = "event-admin-item-details";
-    details.textContent = event.event_date ? `${formatEventDate(event.event_date)} • ${event.details}` : event.details;
+    const dateLabel = event.event_end_date && event.event_end_date !== event.event_date
+      ? `${formatEventDate(event.event_date)} – ${formatEventDate(event.event_end_date)}`
+      : event.event_date ? formatEventDate(event.event_date) : "";
+    details.textContent = dateLabel ? `${dateLabel} • ${event.details}` : event.details;
     description.append(details);
 
     const actions = document.createElement("div");
@@ -378,6 +381,7 @@ function startEditingEvent(eventToEdit) {
   eventForm.elements.namedItem("details").value = eventToEdit.details;
   eventForm.elements.namedItem("badge").value = eventToEdit.badge;
   eventForm.elements.namedItem("event_date").value = eventToEdit.event_date || "";
+  eventForm.elements.namedItem("event_end_date").value = eventToEdit.event_end_date || "";
   eventForm.elements.namedItem("link_label").value = eventToEdit.link_label;
 
   if (![...posterSelect.options].some((option) => option.value === eventToEdit.image_url)) {
@@ -422,7 +426,7 @@ eventForm.addEventListener("submit", async (event) => {
   const values = new FormData(eventForm);
   const selectedLink = values.get("link_url");
   const payload = Object.fromEntries(
-    ["title", "details", "image_url", "badge", "link_label", "event_date"].map((field) => [
+    ["title", "details", "image_url", "badge", "link_label", "event_date", "event_end_date"].map((field) => [
       field,
       values.get(field),
     ]),
