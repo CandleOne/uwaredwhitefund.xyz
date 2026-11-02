@@ -208,6 +208,7 @@ document.addEventListener("click", (event) => {
   if (!toggle) return;
   const section = toggle.closest(".calendar-section");
   const minimized = section.classList.toggle("is-minimized");
+  section.querySelector("[data-event-calendar]").style.display = minimized ? "none" : "";
   toggle.setAttribute("aria-expanded", String(!minimized));
   toggle.textContent = minimized ? "Show Calendar" : "Minimize Calendar";
 });
