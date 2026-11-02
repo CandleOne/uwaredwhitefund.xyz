@@ -203,14 +203,18 @@ document.querySelector("[data-calendar-today]")?.addEventListener("click", () =>
   selectedDate = null;
   drawCalendar();
 });
+const calendarSection = document.querySelector("#calendar");
 document.addEventListener("click", (event) => {
-  const toggle = event.target.closest("[data-calendar-toggle]");
-  if (!toggle) return;
-  const section = toggle.closest(".calendar-section");
-  const minimized = section.classList.toggle("is-minimized");
-  section.querySelector("[data-event-calendar]").style.display = minimized ? "none" : "";
-  toggle.setAttribute("aria-expanded", String(!minimized));
-  toggle.textContent = minimized ? "Show Calendar" : "Minimize Calendar";
+  if (event.target.closest("[data-calendar-toggle]")) {
+    calendarSection.hidden = true;
+    return;
+  }
+  const open = event.target.closest('a[href="#calendar"]');
+  if (open) {
+    event.preventDefault();
+    calendarSection.hidden = false;
+    calendarSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 });
 drawCalendar();
 

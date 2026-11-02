@@ -864,3 +864,4 @@
 }
 .calendar-toggle:hover, .calendar-toggle:focus-visible { background: #9a1c28; }
 .calendar-section.is-minimized .calendar { display: none !important; }
+.calendar-section[hidden] { display: none; }
