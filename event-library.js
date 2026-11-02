@@ -203,6 +203,13 @@ document.querySelector("[data-calendar-today]")?.addEventListener("click", () =>
   selectedDate = null;
   drawCalendar();
 });
+const calendarToggle = document.querySelector("[data-calendar-toggle]");
+calendarToggle?.addEventListener("click", () => {
+  const minimized = !calendarRoot.hidden;
+  calendarRoot.hidden = minimized;
+  calendarToggle.setAttribute("aria-expanded", String(!minimized));
+  calendarToggle.textContent = minimized ? "Show Calendar" : "Minimize Calendar";
+});
 drawCalendar();
 
 async function loadEvents() {

@@ -855,3 +855,8 @@
   .calendar-chip, .calendar-more { display: none; }
   .calendar-cell.has-events .calendar-day-number { border-bottom: 3px solid var(--crimson); }
 }
+
+.calendar-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.calendar-toggle { border: 1px solid var(--line); background: var(--surface); color: var(--crimson); padding: 6px 14px; font: inherit; cursor: pointer; }
+.calendar-toggle:hover { background: var(--crimson); color: #fff; }
+.calendar[hidden] { display: none; }

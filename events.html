@@ -42,8 +42,11 @@
 
         <div class="page-content events-page">
             <section class="calendar-section" id="calendar" aria-labelledby="calendar-heading">
-                <h2 class="library-title" id="calendar-heading">Event Calendar</h2>
-                <div class="calendar" data-event-calendar>
+                <div class="calendar-heading-row">
+                    <h2 class="library-title" id="calendar-heading">Event Calendar</h2>
+                    <button type="button" class="calendar-toggle" data-calendar-toggle aria-expanded="true" aria-controls="calendar-body">Minimize Calendar</button>
+                </div>
+                <div class="calendar" id="calendar-body" data-event-calendar>
                     <div class="calendar-controls">
                         <button type="button" class="calendar-nav" data-calendar-prev aria-label="Previous month">&#8249;</button>
                         <h3 class="calendar-month" data-calendar-title aria-live="polite"></h3>
