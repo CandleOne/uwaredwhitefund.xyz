@@ -49,7 +49,7 @@ function corsHeaders(req, env) {
   if (origin && allowed.includes(origin)) {
     h["Access-Control-Allow-Origin"] = origin;
     h["Access-Control-Allow-Headers"] = "Content-Type, X-Team-Key, X-Admin-Token";
-    h["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS";
+    h["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
   }
   return h;
 }
@@ -236,6 +236,36 @@ async function finishProvisioning(env, team, ip, scheduled = false) {
       return false;
     }
     await new Promise((r) => setTimeout(r, 1000));
+  }
+
+  if (!env.ALPACA_SOURCE_ACCOUNT_NO) {
+    console.log("Funding waiting", team.id, "missing source account");
+  } else try {
+    const trading = await call(`/v1/trading/accounts/${accountId}/account`);
+    if (Number(trading.cash) >= STARTING_CAPITAL) {
+      console.log("Funding complete", team.id);
+      await env.DB.prepare("UPDATE teams SET status = 'active' WHERE id = ?").bind(team.id).run();
+      return true;
+    }
+    await call("/v1/instant_funding", {
+      method: "POST",
+      headers: { "Idempotency-Key": `competition-${team.id}-100000` },
+      body: JSON.stringify({
+        account_no: account.account_number,
+        source_account_no: env.ALPACA_SOURCE_ACCOUNT_NO,
+        amount: STARTING_CAPITAL.toFixed(2),
+      }),
+    });
+    const funded = await call(`/v1/trading/accounts/${accountId}/account`);
+    if (Number(funded.cash) >= STARTING_CAPITAL) {
+      console.log("Funding complete", team.id);
+      await env.DB.prepare("UPDATE teams SET status = 'active' WHERE id = ?").bind(team.id).run();
+      return true;
+    }
+    console.log("Funding waiting", team.id, "instant funding", funded.cash);
+    return false;
+  } catch (err) {
+    console.log("Instant funding unavailable", team.id, err.message, JSON.stringify(err.body || {}));
   }
 
   const relationships = await call(`/v1/accounts/${accountId}/ach_relationships`);
@@ -535,7 +565,13 @@ async function fetchHandler(req, env) {
       const adminMatch = path.match(/^\/admin\/teams\/([a-z0-9-]+)(\/fund)?$/);
       if (adminMatch) {
         if (!adminMatch[2] && req.method === "DELETE") return adminDeleteTeam(req, env, adminMatch[1]);
-        if (adminMatch[2] === "/fund" && req.method === "POST") return adminFundTeam(req, env, adminMatch[1]);
+        if (adminMatch[2] === "/fund" && req.method === "POST") {
+          try {
+            return await adminFundTeam(req, env, adminMatch[1]);
+          } catch (err) {
+            return fail(req, env, err.status === 422 || err.status === 409 ? 400 : 502, err.body?.message || "Alpaca rejected the funding transfer.");
+          }
+        }
       }
       return fail(req, env, 404, "Not found.");
     }
