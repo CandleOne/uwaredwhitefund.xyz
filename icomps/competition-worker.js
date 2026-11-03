@@ -214,7 +214,7 @@ function accountPayload(env, team, ip) {
   };
 }
 
-/* Idempotent-ish: safe to call again for a team stuck in pending_funding. */
+/* Idempotent: safe to call repeatedly while Alpaca queues sandbox funding. */
 async function finishProvisioning(env, team, ip, scheduled = false) {
   let accountId = team.alpaca_account_id;
   const call = (path, init) => alpaca(env, path, init, scheduled);
@@ -227,41 +227,46 @@ async function finishProvisioning(env, team, ip, scheduled = false) {
       .run();
   }
 
-  // Sandbox approval is simulated; give it a few seconds to become ACTIVE.
   for (let i = 0; i < 5; i++) {
     const acct = await call(`/v1/accounts/${accountId}`);
     if (acct.status === "ACTIVE") break;
-    if (i === 4) return false; // cron will retry
+    if (i === 4) return false;
     await new Promise((r) => setTimeout(r, 1000));
   }
 
-  // Fund via a simulated ACH deposit (sandbox executes it immediately).
-  const rel = await call(`/v1/accounts/${accountId}/ach_relationships`, {
-    method: "POST",
-    body: JSON.stringify({
-      account_owner_name: `Team ${team.id}`,
-      bank_account_type: "CHECKING",
-      bank_account_number: "32131231abc",
-      bank_routing_number: "121000358",
-      nickname: "Competition funding",
-    }),
-  }).catch(async (e) => {
-    if (e.status === 409) {
-      const list = await call(`/v1/accounts/${accountId}/ach_relationships`);
-      return list[0];
-    }
-    throw e;
-  });
+  const relationships = await call(`/v1/accounts/${accountId}/ach_relationships`);
+  let rel = relationships.find((r) => r.status === "APPROVED") || relationships[0];
+  if (!rel) {
+    rel = await call(`/v1/accounts/${accountId}/ach_relationships`, {
+      method: "POST",
+      body: JSON.stringify({
+        account_owner_name: `Team ${team.id}`,
+        bank_account_type: "CHECKING",
+        bank_account_number: "32131231abc",
+        bank_routing_number: "121000358",
+        nickname: "Competition funding",
+      }),
+    });
+  }
+  if (rel.status !== "APPROVED") return false;
 
-  await call(`/v1/accounts/${accountId}/transfers`, {
-    method: "POST",
-    body: JSON.stringify({
-      transfer_type: "ach",
-      relationship_id: rel.id,
-      amount: String(STARTING_CAPITAL),
-      direction: "INCOMING",
-    }),
-  });
+  const transfers = await call(`/v1/accounts/${accountId}/transfers`);
+  let transfer = transfers.find((t) => t.type === "ach" && t.direction === "INCOMING" && Number(t.amount) === STARTING_CAPITAL);
+  if (!transfer) {
+    transfer = await call(`/v1/accounts/${accountId}/transfers`, {
+      method: "POST",
+      body: JSON.stringify({
+        transfer_type: "ach",
+        relationship_id: rel.id,
+        amount: String(STARTING_CAPITAL),
+        direction: "INCOMING",
+      }),
+    });
+  }
+  if (!["COMPLETE", "SETTLED"].includes(transfer.status)) {
+    const trading = await call(`/v1/trading/accounts/${accountId}/account`);
+    if (Number(trading.cash) < STARTING_CAPITAL) return false;
+  }
 
   await env.DB.prepare("UPDATE teams SET status = 'active' WHERE id = ?").bind(team.id).run();
   return true;
