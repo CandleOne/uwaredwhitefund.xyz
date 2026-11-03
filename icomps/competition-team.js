@@ -25,8 +25,6 @@
     phaseEl.textContent = isActive
       ? C.phaseMessage(d)
       : "Your portfolio is still being funded. Trading unlocks once it finishes.";
-    dash.hidden = !isActive;
-    if (!isActive) return;
 
     const equity = Number(d.account.equity);
     const ret = ((equity - STARTING) / STARTING) * 100;

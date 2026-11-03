@@ -497,6 +497,28 @@ async function leaderboard(req, env) {
 }
 
 async function teamDetail(req, env, team) {
+  if (team.status !== "active") {
+    const [strategy, members] = await Promise.all([
+      env.DB.prepare("SELECT body, submitted_at FROM strategy_submissions WHERE team_id = ?").bind(team.id).first(),
+      env.DB.prepare("SELECT name, email, is_lead FROM team_members WHERE team_id = ?").bind(team.id).all(),
+    ]);
+    return reply(req, env, {
+      ...(await currentPhase(env)),
+      team: { id: team.id, name: team.name, status: team.status },
+      members: members.results,
+      account: {
+        equity: String(STARTING_CAPITAL),
+        last_equity: String(STARTING_CAPITAL),
+        cash: "0",
+        buying_power: "0",
+        long_market_value: "0",
+      },
+      positions: [],
+      orders: [],
+      strategy,
+    });
+  }
+
   const base = `/v1/trading/accounts/${team.alpaca_account_id}`;
   const [account, positions, orders, strategy, members] = await Promise.all([
     alpaca(env, `${base}/account`),
