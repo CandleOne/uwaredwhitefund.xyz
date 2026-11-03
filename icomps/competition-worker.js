@@ -42,7 +42,16 @@ const MAX_MEMBERS = 4;
 const SYMBOL_RE = /^[A-Z]{1,5}(\.[A-Z])?$/;
 const BROKER_SANDBOX_HOST = "broker-api.sandbox.alpaca.markets";
 const MARKET_DATA_BASE = "https://data.alpaca.markets";
-const BAR_TIMEFRAMES = { "1Min": 2, "5Min": 5, "15Min": 10, "1Hour": 30, "1Day": 365 };
+// Calendar-day lookbacks (padded so weekends and holidays still return bars).
+const CHART_RANGE_DAYS = { "1D": 4, "5D": 9, "1M": 32, "3M": 95, "6M": 186, "1Y": 370, "2Y": 735, "5Y": 1830 };
+// Keeps each combination under a few thousand bars so one page of results is enough.
+const CHART_RANGES = {
+  "1Min": ["1D", "5D"],
+  "5Min": ["1D", "5D", "1M"],
+  "15Min": ["5D", "1M", "3M"],
+  "1Hour": ["1M", "6M", "1Y", "2Y"],
+  "1Day": ["1Y", "2Y", "5Y"],
+};
 
 /* ---------- helpers ---------- */
 
@@ -634,13 +643,15 @@ async function bars(req, env) {
   const symbol = String(url.searchParams.get("symbol") || "").toUpperCase();
   if (!SYMBOL_RE.test(symbol)) return fail(req, env, 400, "Enter a valid symbol.");
   const timeframe = url.searchParams.get("timeframe") || "1Day";
-  if (!Object.hasOwn(BAR_TIMEFRAMES, timeframe)) return fail(req, env, 400, "Unsupported timeframe.");
+  if (!Object.hasOwn(CHART_RANGES, timeframe)) return fail(req, env, 400, "Unsupported timeframe.");
+  const range = url.searchParams.get("range") || "1Y";
+  if (!CHART_RANGES[timeframe].includes(range)) return fail(req, env, 400, "Unsupported range for this timeframe.");
 
-  const start = new Date(Date.now() - BAR_TIMEFRAMES[timeframe] * 86400000).toISOString();
-  const query = new URLSearchParams({ timeframe, start, feed: "iex", adjustment: "split", limit: "1000" });
+  const start = new Date(Date.now() - CHART_RANGE_DAYS[range] * 86400000).toISOString();
+  const query = new URLSearchParams({ timeframe, start, feed: "iex", adjustment: "split", limit: "10000" });
   try {
     const data = await marketData(env, `/v2/stocks/${symbol}/bars?${query}`);
-    const res = reply(req, env, { symbol, timeframe, bars: data.bars || [] });
+    const res = reply(req, env, { symbol, timeframe, range, bars: data.bars || [] });
     res.headers.set("Cache-Control", "private, max-age=60");
     return res;
   } catch (err) {

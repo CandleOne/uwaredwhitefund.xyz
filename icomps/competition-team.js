@@ -22,6 +22,20 @@
   let chartRequest = 0;
   let chartTimer = null;
   let activeSymbol = "SPY";
+  // Mirrors CHART_RANGES in competition-worker.js.
+  const CHART_RANGES = {
+    "1Min": [["1D", "1 day"], ["5D", "5 days"]],
+    "5Min": [["1D", "1 day"], ["5D", "5 days"], ["1M", "1 month"]],
+    "15Min": [["5D", "5 days"], ["1M", "1 month"], ["3M", "3 months"]],
+    "1Hour": [["1M", "1 month"], ["6M", "6 months"], ["1Y", "1 year"], ["2Y", "2 years"]],
+    "1Day": [["1Y", "1 year"], ["2Y", "2 years"], ["5Y", "5 years"]],
+  };
+  const chartTimeframeSelect = $("[data-chart-timeframe]");
+  const chartRangeSelect = $("[data-chart-range]");
+  const marketTime = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
   const tickerInput = $("[data-ticker-input]");
   const tickerNames = new Map();
   const tickerList = $("[data-ticker-results]");
@@ -41,6 +55,25 @@
   function setChartStatus(text, isError) {
     chartStatus.textContent = text;
     chartStatus.classList.toggle("is-error", Boolean(isError));
+  }
+
+  function populateRanges(timeframe, preferred) {
+    const options = CHART_RANGES[timeframe];
+    const keep = options.some(([value]) => value === preferred) ? preferred : options[options.length - 1][0];
+    chartRangeSelect.replaceChildren(...options.map(([value, label]) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      opt.selected = value === keep;
+      return opt;
+    }));
+    return keep;
+  }
+
+  // Lightweight Charts plots Unix times in UTC. Shifting by New York's offset makes intraday axis labels read as market time.
+  function marketSeconds(iso) {
+    const parts = Object.fromEntries(marketTime.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+    return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) / 1000);
   }
 
   function ensureChart() {
@@ -64,15 +97,24 @@
       setChartStatus("The chart library didn't load. Check your connection and refresh the page.", true);
       return;
     }
+    const timeframe = chartTimeframeSelect.value;
+    const range = chartRangeSelect.value;
+    const intraday = timeframe !== "1Day";
+    chart.applyOptions({ timeScale: { timeVisible: intraday, secondsVisible: false } });
     setChartStatus(`Loading ${symbol}…`, false);
     try {
-      const data = await C.api(`/teams/${encodeURIComponent(teamId)}/bars?symbol=${encodeURIComponent(symbol)}&timeframe=1Day`, { teamKey });
+      const query = `symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&range=${range}`;
+      const data = await C.api(`/teams/${encodeURIComponent(teamId)}/bars?${query}`, { teamKey });
       if (request !== chartRequest) return;
-      candles.setData(data.bars.map((b) => ({ time: b.t.slice(0, 10), open: b.o, high: b.h, low: b.l, close: b.c })));
+      candles.setData(data.bars.map((b) => ({
+        time: intraday ? marketSeconds(b.t) : b.t.slice(0, 10),
+        open: b.o, high: b.h, low: b.l, close: b.c,
+      })));
       chart.timeScale().fitContent();
       const last = data.bars[data.bars.length - 1];
       lastBar = last ? { symbol, close: last.c, date: last.t.slice(0, 10) } : null;
-      setChartStatus(lastBar ? `${symbol} last close ${C.money(lastBar.close)} on ${lastBar.date}.` : `No recent price data for ${symbol}.`, false);
+      const when = last && intraday ? `${lastBar.date} ${new Date(last.t).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })} ET` : last ? lastBar.date : "";
+      setChartStatus(lastBar ? `${symbol} last close ${C.money(lastBar.close)} on ${when}.` : `No recent price data for ${symbol}.`, false);
     } catch (err) {
       if (request !== chartRequest) return;
       lastBar = null;
@@ -377,6 +419,14 @@
     scheduleChart();
   });
 
+  chartTimeframeSelect.addEventListener("change", () => {
+    populateRanges(chartTimeframeSelect.value, chartRangeSelect.value);
+    if (activeSymbol) loadChart(activeSymbol);
+  });
+  chartRangeSelect.addEventListener("change", () => {
+    if (activeSymbol) loadChart(activeSymbol);
+  });
+
   tickerInput.addEventListener("input", () => {
     clearTimeout(tickerTimer);
     if (!teamKey) return;
@@ -472,6 +522,7 @@
     }
   });
 
+  populateRanges(chartTimeframeSelect.value, "1Y");
   if (!ensureChart()) setChartStatus("The chart library didn't load. Check your connection and refresh the page.", true);
 
   if (teamId && teamKey) start();
