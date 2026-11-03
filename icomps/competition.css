@@ -43,6 +43,12 @@
 .team-summary dt { margin: 0 0 6px; color: var(--crimson); font-size: 0.85rem; font-weight: 700; }
 .team-summary dd { margin: 0; font-size: 1.35rem; }
 .order-ticket { margin: 32px 0; padding: 24px; background: #f2f3f3; }
+.trading-desk { margin: 0 0 32px; }
+.trading-desk > h3 { margin-top: 0; }
+.order-held { margin: 12px 0 0; font-weight: 700; }
+.order-review { margin: 0 0 24px; padding: 20px 24px; background: #fff; border-left: 4px solid var(--crimson); }
+.order-summary { margin: 0 0 16px; }
+.order-review-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .order-ticket .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; align-items: end; }
 .competition-message { margin: 0; min-height: 1.4em; }
 .competition-message.is-error { color: #a31621; }

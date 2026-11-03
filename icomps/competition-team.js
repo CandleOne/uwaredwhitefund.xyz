@@ -13,10 +13,50 @@
   let teamKey = teamId ? sessionStorage.getItem(`cmp-key-${teamId}`) || "" : "";
   let timer = null;
   let strategyLoaded = false;
+  let positions = [];
+  let pendingOrder = null;
 
   function setMessage(el, text, isError) {
     el.textContent = text;
     el.classList.toggle("is-error", Boolean(isError));
+  }
+
+  function heldShares(symbol) {
+    const match = positions.find((p) => p.symbol === symbol);
+    return match ? Number(match.qty) : 0;
+  }
+
+  function updateHeld() {
+    const symbol = orderForm.elements.symbol.value.trim().toUpperCase();
+    const readout = $("[data-held-readout]");
+    if (!symbol) {
+      readout.textContent = "";
+    } else {
+      const held = heldShares(symbol);
+      readout.textContent = held ? `You hold ${held} shares of ${symbol}.` : `You hold no shares of ${symbol}.`;
+    }
+    orderForm.elements.qty.max = orderForm.elements.side.value === "sell" && symbol ? heldShares(symbol) : "";
+  }
+
+  function clearReview() {
+    pendingOrder = null;
+    $("[data-order-review-panel]").hidden = true;
+  }
+
+  function validateOrder() {
+    const f = orderForm.elements;
+    const symbol = f.symbol.value.trim().toUpperCase();
+    const qty = Number(f.qty.value);
+    const side = f.side.value;
+    const type = f.type.value;
+    const limitPrice = type === "limit" ? Number(f.limitPrice.value) : undefined;
+    if (!/^[A-Z]{1,7}$/.test(symbol)) return { error: "Enter a valid ticker symbol." };
+    if (!Number.isInteger(qty) || qty < 1) return { error: "Enter a whole number of shares, at least 1." };
+    if (type === "limit" && !(limitPrice > 0)) return { error: "Enter a limit price greater than zero." };
+    if (side === "sell" && qty > heldShares(symbol)) {
+      return { error: `You only hold ${heldShares(symbol)} shares of ${symbol}, so you can't sell ${qty}.` };
+    }
+    return { order: { symbol, side, qty, type, limitPrice } };
   }
 
   function render(d) {
@@ -65,8 +105,12 @@
       return tr;
     }));
 
+    positions = d.positions;
+    updateHeld();
+
     const canTrade = d.tradingOpen && d.team.status === "active";
-    orderForm.querySelector("[data-order-submit]").disabled = !canTrade;
+    $("[data-order-review]").disabled = !canTrade;
+    $("[data-order-confirm]").disabled = !canTrade;
     if (!canTrade) setMessage($("[data-order-message]"), "Trading isn't open yet.", false);
 
     if (!strategyLoaded) {
@@ -117,33 +161,57 @@
     $("[data-limit-wrap]").hidden = orderForm.elements.type.value !== "limit";
   });
 
-  orderForm.addEventListener("submit", async (e) => {
+  orderForm.elements.symbol.addEventListener("input", updateHeld);
+  orderForm.elements.side.addEventListener("change", updateHeld);
+  orderForm.addEventListener("input", clearReview);
+  orderForm.addEventListener("change", clearReview);
+
+  orderForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const msg = $("[data-order-message]");
-    const btn = $("[data-order-submit]");
-    btn.disabled = true;
+    const result = validateOrder();
+    if (result.error) {
+      clearReview();
+      setMessage(msg, result.error, true);
+      return;
+    }
+    pendingOrder = result.order;
+    const o = pendingOrder;
+    const priceText = o.type === "limit" ? ` at a limit of ${C.money(o.limitPrice)}` : " at market";
+    $("[data-order-summary]").textContent = `Review: ${o.side} ${o.qty} shares of ${o.symbol}${priceText}. Day order.`;
+    $("[data-order-review-panel]").hidden = false;
+    setMessage(msg, "", false);
+    $("[data-order-confirm]").focus();
+  });
+
+  $("[data-order-edit]").addEventListener("click", () => {
+    clearReview();
+    orderForm.elements.symbol.focus();
+  });
+
+  $("[data-order-confirm]").addEventListener("click", async () => {
+    if (!pendingOrder) return;
+    const msg = $("[data-order-message]");
+    const confirmBtn = $("[data-order-confirm]");
+    confirmBtn.disabled = true;
     setMessage(msg, "Submitting order…", false);
     try {
-      const f = orderForm.elements;
+      const o = pendingOrder;
       await C.api(`/teams/${encodeURIComponent(teamId)}/orders`, {
         method: "POST",
         teamKey,
-        body: {
-          symbol: f.symbol.value,
-          side: f.side.value,
-          qty: Number(f.qty.value),
-          type: f.type.value,
-          limitPrice: f.type.value === "limit" ? Number(f.limitPrice.value) : undefined,
-        },
+        body: { symbol: o.symbol, side: o.side, qty: o.qty, type: o.type, limitPrice: o.limitPrice },
       });
-      setMessage(msg, `Order submitted: ${f.side.value} ${f.qty.value} ${f.symbol.value.toUpperCase()}.`, false);
+      setMessage(msg, `Order submitted: ${o.side} ${o.qty} ${o.symbol}.`, false);
+      clearReview();
       orderForm.reset();
       $("[data-limit-wrap]").hidden = true;
+      updateHeld();
       refresh();
     } catch (err) {
       setMessage(msg, err.message, true);
     } finally {
-      btn.disabled = false;
+      confirmBtn.disabled = false;
     }
   });
 
