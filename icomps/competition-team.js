@@ -82,6 +82,7 @@
       render(await C.api(`/teams/${encodeURIComponent(teamId)}`, { teamKey }));
       C.showError(errorEl, "");
     } catch (err) {
+      dash.hidden = true;
       if (err.status === 401) return showSignin("That team ID or passcode doesn't match. Check both and try again.");
       C.showError(errorEl, err.message);
     }
