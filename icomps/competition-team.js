@@ -21,8 +21,12 @@
 
   function render(d) {
     $("[data-title]").textContent = d.team.name;
-    phaseEl.textContent =
-      d.team.status === "active" ? C.phaseMessage(d) : "Your portfolio is still being funded. Trading unlocks once it finishes.";
+    const isActive = d.team.status === "active";
+    phaseEl.textContent = isActive
+      ? C.phaseMessage(d)
+      : "Your portfolio is still being funded. Trading unlocks once it finishes.";
+    dash.hidden = !isActive;
+    if (!isActive) return;
 
     const equity = Number(d.account.equity);
     const ret = ((equity - STARTING) / STARTING) * 100;
