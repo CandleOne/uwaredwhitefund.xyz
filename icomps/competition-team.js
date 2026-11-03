@@ -6,6 +6,7 @@
   const signin = $("[data-signin]");
   const dash = $("[data-dashboard]");
   const orderForm = $("[data-order-form]");
+  const optionForm = $("[data-option-form]");
   const strategyForm = $("[data-strategy-form]");
   const STARTING = 100000;
 
@@ -15,6 +16,10 @@
   let strategyLoaded = false;
   let positions = [];
   let pendingOrder = null;
+  let optionContracts = [];
+  let optionQuote = null;
+  let optionContractsRequest = 0;
+  let optionQuoteRequest = 0;
   let buyingPower = 0;
   let lastBar = null;
   let chart = null;
@@ -283,9 +288,163 @@
     orderForm.elements.qty.max = orderForm.elements.side.value === "sell" && symbol ? heldShares(symbol) : "";
   }
 
+  function heldContracts(symbol) {
+    return Number(positions.find((p) => p.symbol === symbol)?.qty || 0);
+  }
+
+  function updateOptionHeld() {
+    const symbol = optionForm.elements.contract.value;
+    const readout = $("[data-option-held]");
+    const held = symbol ? heldContracts(symbol) : 0;
+    readout.textContent = symbol
+      ? held ? `You hold ${held} contracts of ${symbol}.` : `You hold no contracts of ${symbol}.`
+      : "";
+    optionForm.elements.qty.max = optionForm.elements.side.value === "sell" && symbol ? held : "1000";
+  }
+
+  function setOptionLimitFromQuote() {
+    if (!optionQuote) return;
+    const price = Number(optionForm.elements.side.value === "buy" ? optionQuote.ask : optionQuote.bid);
+    if (price > 0) optionForm.elements.limitPrice.value = price.toFixed(2);
+  }
+
+  async function loadOptionExpirations() {
+    const request = ++optionContractsRequest;
+    const underlying = optionForm.elements.underlying.value.trim().toUpperCase();
+    optionForm.elements.underlying.value = underlying;
+    const expirationSelect = optionForm.elements.expiration;
+    optionContracts = [];
+    optionForm.elements.contract.replaceChildren(new Option("Choose a contract", ""));
+    expirationSelect.replaceChildren(new Option("Loading dates…", ""));
+    optionQuote = null;
+    optionQuoteRequest += 1;
+    updateOptionHeld();
+    if (!/^[A-Z]{1,5}$/.test(underlying)) {
+      expirationSelect.replaceChildren(new Option("Enter a ticker", ""));
+      setMessage($("[data-option-quote]"), "Enter a valid underlying ticker.", true);
+      return;
+    }
+
+    setMessage($("[data-option-quote]"), "Loading expirations…", false);
+    try {
+      const data = await C.api(`/teams/${encodeURIComponent(teamId)}/options/contracts?underlying=${encodeURIComponent(underlying)}`, { teamKey });
+      if (request !== optionContractsRequest) return;
+      expirationSelect.replaceChildren(new Option("Choose a date", ""));
+      for (const expiration of data.expirations || []) {
+        expirationSelect.add(new Option(new Date(`${expiration}T00:00:00`).toLocaleDateString("en-US", { dateStyle: "medium" }), expiration));
+      }
+      if (!expirationSelect.options.length || !expirationSelect.options[0].value && expirationSelect.options.length === 1) {
+        expirationSelect.replaceChildren(new Option("No expirations", ""));
+        setMessage($("[data-option-quote]"), "No standard option expirations found for this ticker.", false);
+        return;
+      }
+      expirationSelect.selectedIndex = 1;
+      await loadOptionContracts();
+    } catch (err) {
+      if (request !== optionContractsRequest) return;
+      expirationSelect.replaceChildren(new Option("Unavailable", ""));
+      setMessage($("[data-option-quote]"), err.message, true);
+    }
+  }
+
+  async function loadOptionContracts() {
+    const request = ++optionContractsRequest;
+    const underlying = optionForm.elements.underlying.value.trim().toUpperCase();
+    const expiration = optionForm.elements.expiration.value;
+    const type = optionForm.elements.optionType.value;
+    const contractSelect = optionForm.elements.contract;
+    optionContracts = [];
+    contractSelect.replaceChildren(new Option("Loading strikes…", ""));
+    optionQuote = null;
+    optionQuoteRequest += 1;
+    updateOptionHeld();
+    if (!expiration) return;
+
+    setMessage($("[data-option-quote]"), "Loading contracts…", false);
+    try {
+      const query = new URLSearchParams({ underlying, expiration, type });
+      const data = await C.api(`/teams/${encodeURIComponent(teamId)}/options/contracts?${query}`, { teamKey });
+      if (request !== optionContractsRequest) return;
+      optionContracts = data.contracts || [];
+      contractSelect.replaceChildren(new Option("Choose a contract", ""));
+      for (const contract of optionContracts) {
+        contractSelect.add(new Option(`${contract.strike} ${contract.type === "call" ? "Call" : "Put"}`, contract.symbol));
+      }
+      if (!optionContracts.length) {
+        contractSelect.replaceChildren(new Option("No contracts", ""));
+        setMessage($("[data-option-quote]"), "No standard contracts are available for this selection.", false);
+        return;
+      }
+      contractSelect.selectedIndex = 1;
+      await loadOptionQuote();
+    } catch (err) {
+      if (request !== optionContractsRequest) return;
+      contractSelect.replaceChildren(new Option("Unavailable", ""));
+      setMessage($("[data-option-quote]"), err.message, true);
+    }
+  }
+
+  async function loadOptionQuote() {
+    const symbol = optionForm.elements.contract.value;
+    optionQuote = null;
+    const request = ++optionQuoteRequest;
+    updateOptionHeld();
+    if (!symbol) return;
+    setMessage($("[data-option-quote]"), "Loading option quote…", false);
+    try {
+      const data = await C.api(`/teams/${encodeURIComponent(teamId)}/options/quote?symbol=${encodeURIComponent(symbol)}`, { teamKey });
+      if (request !== optionQuoteRequest) return;
+      optionQuote = data;
+      const bid = Number(data.bid) > 0 ? C.money(data.bid) : "—";
+      const ask = Number(data.ask) > 0 ? C.money(data.ask) : "—";
+      setMessage($("[data-option-quote]"), `Indicative bid ${bid} · ask ${ask}. Premium is quoted per share; one standard contract represents 100 shares.`, false);
+      setOptionLimitFromQuote();
+    } catch (err) {
+      if (request !== optionQuoteRequest) return;
+      setMessage($("[data-option-quote]"), err.message, true);
+    }
+  }
+
   function clearReview() {
     pendingOrder = null;
     $("[data-order-review-panel]").hidden = true;
+  }
+
+  function validateOptionOrder() {
+    const f = optionForm.elements;
+    const contract = optionContracts.find((c) => c.symbol === f.contract.value);
+    const qty = Number(f.qty.value);
+    const limitPrice = Number(f.limitPrice.value);
+    const side = f.side.value;
+    if (!contract) return { error: "Choose an available option contract." };
+    if (!Number.isInteger(qty) || qty < 1 || qty > 1000) return { error: "Enter 1 to 1,000 whole contracts." };
+    if (!(limitPrice > 0) || !Number.isFinite(limitPrice)) return { error: "Enter a limit premium greater than zero." };
+    const held = heldContracts(contract.symbol);
+    if (side === "sell" && qty > held) return { error: `You hold ${held} contracts of this option, so you can't sell ${qty}.` };
+    const estimate = qty * limitPrice * 100;
+    if (side === "buy" && estimate > buyingPower) return { error: `Estimated premium ${C.money(estimate)} is more than your buying power of ${C.money(buyingPower)}.` };
+    return { order: { assetClass: "option", symbol: contract.symbol, name: contract.name, side, qty, limitPrice, estimate } };
+  }
+
+  function showOrderReview(order) {
+    pendingOrder = order;
+    const priceText = ` at a limit of ${C.money(order.limitPrice)}`;
+    const estimateNote = order.assetClass !== "option" && order.type === "market" && order.estimate !== null ? " (at the last close)" : "";
+    const estText = order.estimate !== null ? ` Estimated ${order.side === "buy" ? order.assetClass === "option" ? "premium" : "cost" : "proceeds"} ${C.money(order.estimate)}${estimateNote}.` : "";
+    const summary = order.assetClass === "option"
+      ? `Review: ${order.side === "buy" ? "buy to open" : "sell to close"} ${order.qty} ${order.name || order.symbol}${priceText} per share. Estimated contract total uses a 100-share multiplier.${estText}`
+      : `Review: ${order.side} ${order.qty} shares of ${order.symbol}${order.type === "limit" ? priceText : " at market"}. Day order.${estText}`;
+    $("[data-order-summary]").textContent = summary;
+    $("[data-order-review-panel]").hidden = false;
+    setMessage($("[data-order-message]"), "", false);
+    $("[data-order-confirm]").focus();
+  }
+
+  function displayPositionSymbol(symbol) {
+    const match = symbol.match(/^([A-Z0-9]{1,6})(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/);
+    if (!match) return symbol;
+    const optionType = match[5] === "C" ? "Call" : "Put";
+    return `${match[1]} ${match[2]}-${match[3]}-${match[4]} ${C.money(Number(match[6]) / 1000)} ${optionType}`;
   }
 
   function validateOrder() {
@@ -331,7 +490,7 @@
     if (!d.positions.length) C.emptyRow(posBody, 7, "No open positions yet. Place your first order above.");
     else posBody.replaceChildren(...d.positions.map((p) => {
       const tr = document.createElement("tr");
-      C.cell(tr, p.symbol);
+      C.cell(tr, displayPositionSymbol(p.symbol));
       C.cell(tr, p.side);
       C.cell(tr, p.qty);
       C.cell(tr, C.money(p.current_price));
@@ -359,9 +518,11 @@
     buyingPower = Number(d.account.buying_power) || 0;
     renderCurrent();
     updateHeld();
+    updateOptionHeld();
 
     const canTrade = d.tradingOpen && d.team.status === "active";
     $("[data-order-review]").disabled = !canTrade;
+    $("[data-option-review]").disabled = !canTrade;
     $("[data-order-confirm]").disabled = !canTrade;
     if (!canTrade) setMessage($("[data-order-message]"), "Trading isn't open yet.", false);
 
@@ -463,9 +624,34 @@
     const row = e.target.closest(".ticker-row");
     if (row) selectTicker(row.dataset.symbol);
   });
+  document.querySelectorAll("[data-trade-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const optionsMode = button.dataset.tradeMode === "options";
+      document.querySelectorAll("[data-trade-mode]").forEach((modeButton) => {
+        modeButton.setAttribute("aria-pressed", String(modeButton === button));
+      });
+      $("[data-stock-ticket]").hidden = optionsMode;
+      optionForm.hidden = !optionsMode;
+      clearReview();
+      if (optionsMode) {
+        optionForm.elements.underlying.value = activeSymbol || "SPY";
+        loadOptionExpirations();
+      }
+    });
+  });
   orderForm.elements.side.addEventListener("change", updateHeld);
   orderForm.addEventListener("input", clearReview);
   orderForm.addEventListener("change", clearReview);
+  optionForm.addEventListener("input", clearReview);
+  optionForm.addEventListener("change", clearReview);
+  optionForm.elements.underlying.addEventListener("change", loadOptionExpirations);
+  optionForm.elements.optionType.addEventListener("change", loadOptionContracts);
+  optionForm.elements.expiration.addEventListener("change", loadOptionContracts);
+  optionForm.elements.contract.addEventListener("change", loadOptionQuote);
+  optionForm.elements.side.addEventListener("change", () => {
+    updateOptionHeld();
+    setOptionLimitFromQuote();
+  });
 
   orderForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -476,21 +662,25 @@
       setMessage(msg, result.error, true);
       return;
     }
-    pendingOrder = result.order;
-    const o = pendingOrder;
-    const priceText = o.type === "limit" ? ` at a limit of ${C.money(o.limitPrice)}` : " at market";
-    const estText = o.estimate !== null
-      ? ` Estimated ${o.side === "buy" ? "cost" : "proceeds"} ${C.money(o.estimate)}${o.type === "market" ? " (at the last close)" : ""}.`
-      : "";
-    $("[data-order-summary]").textContent = `Review: ${o.side} ${o.qty} shares of ${o.symbol}${priceText}. Day order.${estText}`;
-    $("[data-order-review-panel]").hidden = false;
-    setMessage(msg, "", false);
-    $("[data-order-confirm]").focus();
+    showOrderReview(result.order);
+  });
+
+  optionForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const msg = $("[data-order-message]");
+    const result = validateOptionOrder();
+    if (result.error) {
+      clearReview();
+      setMessage(msg, result.error, true);
+      return;
+    }
+    showOrderReview(result.order);
   });
 
   $("[data-order-edit]").addEventListener("click", () => {
+    const wasOption = pendingOrder?.assetClass === "option";
     clearReview();
-    orderForm.elements.symbol.focus();
+    (wasOption ? optionForm.elements.underlying : orderForm.elements.symbol).focus();
   });
 
   $("[data-order-confirm]").addEventListener("click", async () => {
@@ -501,17 +691,27 @@
     setMessage(msg, "Submitting order…", false);
     try {
       const o = pendingOrder;
-      await C.api(`/teams/${encodeURIComponent(teamId)}/orders`, {
+      const isOption = o.assetClass === "option";
+      await C.api(`/teams/${encodeURIComponent(teamId)}/${isOption ? "options/orders" : "orders"}`, {
         method: "POST",
         teamKey,
-        body: { symbol: o.symbol, side: o.side, qty: o.qty, type: o.type, limitPrice: o.limitPrice },
+        body: isOption
+          ? { symbol: o.symbol, side: o.side, qty: o.qty, limitPrice: o.limitPrice }
+          : { symbol: o.symbol, side: o.side, qty: o.qty, type: o.type, limitPrice: o.limitPrice },
       });
-      setMessage(msg, `Order submitted: ${o.side} ${o.qty} ${o.symbol}.`, false);
+      setMessage(msg, isOption
+        ? `Options order submitted: ${o.side === "buy" ? "buy to open" : "sell to close"} ${o.qty} ${o.symbol}.`
+        : `Order submitted: ${o.side} ${o.qty} ${o.symbol}.`, false);
       clearReview();
-      orderForm.reset();
-      orderForm.elements.symbol.value = activeSymbol;
-      $("[data-limit-wrap]").hidden = true;
+      if (isOption) {
+        optionForm.elements.qty.value = "1";
+      } else {
+        orderForm.reset();
+        orderForm.elements.symbol.value = activeSymbol;
+        $("[data-limit-wrap]").hidden = true;
+      }
       updateHeld();
+      updateOptionHeld();
       refresh();
     } catch (err) {
       setMessage(msg, err.message, true);

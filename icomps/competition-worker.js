@@ -33,6 +33,7 @@
  *   COMP_END    = "2027-02-16T16:00:00-06:00"
  *
  * Secrets (wrangler secret put ...): ALPACA_KEY, ALPACA_SECRET
+ * Broker API contract lookup (Basic Auth): ALPACA_BROKER_KEY, ALPACA_BROKER_SECRET
  * Market data (chart bars): ALPACA_DATA_KEY, ALPACA_DATA_SECRET. These are a separate
  * Alpaca Market Data API key pair from the Alpaca dashboard, not the Broker OAuth client.
  */
@@ -40,6 +41,7 @@
 const STARTING_CAPITAL = 100000;
 const MAX_MEMBERS = 4;
 const SYMBOL_RE = /^[A-Z]{1,5}(\.[A-Z])?$/;
+const OPTION_SYMBOL_RE = /^[A-Z0-9]{1,6}\d{6}[CP]\d{8}$/;
 const BROKER_SANDBOX_HOST = "broker-api.sandbox.alpaca.markets";
 const MARKET_DATA_BASE = "https://data.alpaca.markets";
 // Calendar-day lookbacks (padded so weekends and holidays still return bars).
@@ -205,6 +207,30 @@ async function alpaca(env, path, init = {}, scheduled = false) {
   }
   if (!res.ok) {
     const err = new Error(`Alpaca ${res.status} ${init.method || "GET"} ${path}`);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  return body;
+}
+
+async function alpacaBrokerBasic(env, path) {
+  const brokerBase = new URL(env.ALPACA_BROKER_BASE);
+  if (brokerBase.protocol !== "https:" || brokerBase.hostname !== BROKER_SANDBOX_HOST) {
+    throw new Error("The competition can only connect to the Alpaca Broker API sandbox.");
+  }
+  if (!env.ALPACA_BROKER_KEY || !env.ALPACA_BROKER_SECRET) {
+    const err = new Error("Option contract lookup credentials are not configured.");
+    err.status = 503;
+    throw err;
+  }
+  const credentials = btoa(`${env.ALPACA_BROKER_KEY}:${env.ALPACA_BROKER_SECRET}`);
+  const res = await fetch(brokerBase.origin + path, {
+    headers: { Authorization: `Basic ${credentials}`, Accept: "application/json" },
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error(`Alpaca ${res.status} GET ${path}`);
     err.status = res.status;
     err.body = body;
     throw err;
@@ -626,6 +652,128 @@ async function placeOrder(req, env, team) {
   }
 }
 
+function isStandardOptionContract(contract) {
+  const deliverables = contract.deliverables;
+  return contract.status === "active"
+    && contract.tradable
+    && Number(contract.multiplier) === 100
+    && Number(contract.size) === 100
+    && Array.isArray(deliverables)
+    && deliverables.length === 1
+    && deliverables[0].type === "equity"
+    && deliverables[0].symbol === contract.underlying_symbol
+    && Number(deliverables[0].amount) === 100;
+}
+
+async function optionsContracts(req, env) {
+  const url = new URL(req.url);
+  const underlying = String(url.searchParams.get("underlying") || "").trim().toUpperCase();
+  const expiration = String(url.searchParams.get("expiration") || "");
+  const type = String(url.searchParams.get("type") || "").toLowerCase();
+  if (!/^[A-Z]{1,5}$/.test(underlying)) return fail(req, env, 400, "Enter a valid underlying ticker.");
+  if (expiration && !/^\d{4}-\d{2}-\d{2}$/.test(expiration)) return fail(req, env, 400, "Enter a valid expiration date.");
+  if (type && !["call", "put"].includes(type)) return fail(req, env, 400, "Option type must be call or put.");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const query = new URLSearchParams({
+    underlying_symbols: underlying,
+    status: "active",
+    expiration_date_gte: today,
+    expiration_date_lte: expiration || new Date(Date.now() + 120 * 86400000).toISOString().slice(0, 10),
+    limit: "1000",
+    show_deliverables: "true",
+  });
+  if (expiration) query.set("expiration_date", expiration);
+  if (type) query.set("type", type);
+
+  try {
+    const contracts = [];
+    let pageToken = "";
+    for (let page = 0; page < 10; page += 1) {
+      if (pageToken) query.set("page_token", pageToken);
+      const data = await alpacaBrokerBasic(env, `/v1/options/contracts?${query}`);
+      contracts.push(...(data.option_contracts || []));
+      pageToken = data.next_page_token || "";
+      if (!pageToken || expiration) break;
+    }
+
+    const standard = contracts.filter(isStandardOptionContract);
+    if (!expiration) {
+      const expirations = [...new Set(standard.map((c) => c.expiration_date))].sort();
+      return reply(req, env, { expirations });
+    }
+    const filtered = standard
+      .filter((c) => c.expiration_date === expiration && (!type || c.type === type))
+      .map((c) => ({ symbol: c.symbol, expiration: c.expiration_date, strike: Number(c.strike_price), type: c.type, name: c.name }));
+    return reply(req, env, { contracts: filtered });
+  } catch (err) {
+    if (err.status === 503) return fail(req, env, 503, err.message);
+    return fail(req, env, err.status === 400 || err.status === 404 ? 404 : 502, err.body?.message || "Could not load option contracts.");
+  }
+}
+
+async function optionQuote(req, env) {
+  const symbol = String(new URL(req.url).searchParams.get("symbol") || "").trim().toUpperCase();
+  if (!OPTION_SYMBOL_RE.test(symbol)) return fail(req, env, 400, "Enter a valid option contract.");
+  const query = new URLSearchParams({ symbols: symbol, feed: "indicative" });
+  try {
+    const data = await marketData(env, `/v1beta1/options/quotes/latest?${query}`);
+    const quote = data.quotes?.[symbol];
+    if (!quote) return fail(req, env, 404, "No current quote for that option contract.");
+    return reply(req, env, { symbol, bid: quote.bp, ask: quote.ap, timestamp: quote.t });
+  } catch (err) {
+    if (err.status === 503) return fail(req, env, 503, "Option market data is not configured.");
+    return fail(req, env, err.status === 400 || err.status === 404 ? 404 : 502, err.body?.message || "Could not load the option quote.");
+  }
+}
+
+async function placeOptionOrder(req, env, team) {
+  if (!(await currentPhase(env)).tradingOpen) return fail(req, env, 403, "Trading is not open.");
+  if (team.status !== "active") return fail(req, env, 409, "Your portfolio isn't funded yet.");
+
+  const body = await readJson(req);
+  const symbol = String(body?.symbol || "").trim().toUpperCase();
+  const side = body?.side;
+  const qty = Number(body?.qty);
+  const limit = Number(body?.limitPrice);
+  if (!OPTION_SYMBOL_RE.test(symbol)) return fail(req, env, 400, "Enter a valid option contract.");
+  if (!["buy", "sell"].includes(side)) return fail(req, env, 400, "Side must be buy or sell.");
+  if (!Number.isInteger(qty) || qty < 1 || qty > 1000) return fail(req, env, 400, "Quantity must be 1 to 1,000 contracts.");
+  if (!(limit > 0) || !Number.isFinite(limit)) return fail(req, env, 400, "Enter a limit price greater than zero.");
+
+  try {
+    const match = symbol.match(/^([A-Z0-9]{1,6})(\d{2})(\d{2})(\d{2})([CP])\d{8}$/);
+    const query = new URLSearchParams({
+      underlying_symbols: match[1],
+      expiration_date: `20${match[2]}-${match[3]}-${match[4]}`,
+      type: match[5] === "C" ? "call" : "put",
+      status: "active",
+      limit: "1000",
+      show_deliverables: "true",
+    });
+    const data = await alpacaBrokerBasic(env, `/v1/options/contracts?${query}`);
+    const contract = (data.option_contracts || []).find((item) => item.symbol === symbol && isStandardOptionContract(item));
+    if (!contract) return fail(req, env, 400, "This is not an active standard 100-share option contract.");
+
+    const base = `/v1/trading/accounts/${team.alpaca_account_id}`;
+    if (side === "sell") {
+      const positions = await alpaca(env, `${base}/positions`);
+      const held = Number((positions || []).find((p) => p.symbol === symbol)?.qty || 0);
+      if (held < qty) return fail(req, env, 400, `You hold ${held} contracts of ${symbol}; selling more is not allowed.`);
+    }
+
+    const order = await alpaca(env, `${base}/orders`, {
+      method: "POST",
+      body: JSON.stringify({ symbol, qty: String(qty), side, type: "limit", time_in_force: "day", limit_price: String(limit) }),
+    });
+    return reply(req, env, { id: order.id, status: order.status }, 201);
+  } catch (err) {
+    const msg = err.body?.message || "Alpaca rejected the options order.";
+    if (err.status === 503) return fail(req, env, 503, err.message);
+    return fail(req, env, [400, 403, 404, 422].includes(err.status) ? 400 : 502, msg);
+  }
+}
+
 async function saveStrategy(req, env, team) {
   if (Date.now() > Date.parse(env.COMP_END)) return fail(req, env, 403, "The competition has ended.");
   const b = await readJson(req);
@@ -742,7 +890,7 @@ async function fetchHandler(req, env) {
       return fail(req, env, 404, "Not found.");
     }
 
-    const m = path.match(/^\/teams\/([a-z0-9-]+)(\/orders|\/strategy|\/bars|\/tickers)?$/);
+    const m = path.match(/^\/teams\/([a-z0-9-]+)(\/orders|\/strategy|\/bars|\/tickers|\/options\/contracts|\/options\/quote|\/options\/orders)?$/);
     if (m) {
       const team = await authTeam(req, env, m[1]);
       if (!team) return fail(req, env, 401, "Team passcode is missing or incorrect.");
@@ -751,6 +899,9 @@ async function fetchHandler(req, env) {
       if (m[2] === "/strategy" && req.method === "PUT") return saveStrategy(req, env, team);
       if (m[2] === "/bars" && req.method === "GET") return bars(req, env);
       if (m[2] === "/tickers" && req.method === "GET") return searchTickers(req, env, m[1]);
+      if (m[2] === "/options/contracts" && req.method === "GET") return optionsContracts(req, env);
+      if (m[2] === "/options/quote" && req.method === "GET") return optionQuote(req, env);
+      if (m[2] === "/options/orders" && req.method === "POST") return placeOptionOrder(req, env, team);
     }
     return fail(req, env, 404, "Not found.");
   } catch (err) {

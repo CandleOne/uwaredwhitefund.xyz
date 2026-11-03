@@ -92,6 +92,11 @@
 
           <section class="trading-desk" aria-labelledby="desk-heading">
             <h3 id="desk-heading">Trading desk</h3>
+            <div class="trade-modes" role="group" aria-label="Instrument type">
+              <button type="button" data-trade-mode="stocks" aria-pressed="true">Stocks</button>
+              <button type="button" data-trade-mode="options" aria-pressed="false">Options</button>
+            </div>
+            <div class="trade-ticket" data-stock-ticket>
             <form class="competition-form order-ticket" data-order-form novalidate>
               <div class="row">
                 <label>Symbol <input name="symbol" type="text" maxlength="7" required autocapitalize="characters" autocomplete="off" /></label>
@@ -107,6 +112,28 @@
               <p class="order-held" data-held-readout aria-live="polite"></p>
               <button type="submit" data-order-review>Review order</button>
             </form>
+            <p class="form-hint">Orders are day orders. Short selling isn't allowed. Orders placed outside market hours queue until the next open.</p>
+            </div>
+
+            <form class="competition-form order-ticket option-ticket" data-option-form hidden novalidate>
+              <div class="row">
+                <label>Underlying <input name="underlying" type="text" maxlength="5" required autocapitalize="characters" autocomplete="off" value="SPY" /></label>
+                <label>Contract type
+                  <select name="optionType"><option value="call">Call</option><option value="put">Put</option></select>
+                </label>
+                <label>Expiration <select name="expiration" required><option value="">Choose a date</option></select></label>
+                <label>Strike <select name="contract" required><option value="">Choose a contract</option></select></label>
+                <label>Action
+                  <select name="side"><option value="buy">Buy to open</option><option value="sell">Sell to close</option></select>
+                </label>
+                <label>Contracts <input name="qty" type="number" min="1" max="1000" step="1" required value="1" /></label>
+                <label>Limit premium <input name="limitPrice" type="number" min="0.01" step="0.01" required /></label>
+              </div>
+              <p class="option-quote" data-option-quote role="status">Choose an underlying to load available contracts.</p>
+              <p class="order-held" data-option-held aria-live="polite"></p>
+              <button type="submit" data-option-review>Review options order</button>
+              <p class="form-hint">Long options can expire worthless. Only standard 100-share contracts are available; short options and spreads are disabled.</p>
+            </form>
 
             <div class="order-review" data-order-review-panel hidden>
               <p class="order-summary" data-order-summary></p>
@@ -117,13 +144,12 @@
             </div>
 
             <p class="competition-message" data-order-message role="status"></p>
-            <p class="form-hint">Orders are day orders. Short selling isn't allowed. Orders placed outside market hours queue until the next open.</p>
           </section>
 
           <h3>Positions</h3>
           <div class="table-scroll">
             <table class="competition-table">
-              <thead><tr><th scope="col">Symbol</th><th scope="col">Side</th><th scope="col">Shares</th><th scope="col">Price</th><th scope="col">Market value</th><th scope="col">Unrealized P/L</th><th scope="col">Today</th></tr></thead>
+              <thead><tr><th scope="col">Instrument</th><th scope="col">Side</th><th scope="col">Qty</th><th scope="col">Price</th><th scope="col">Market value</th><th scope="col">Unrealized P/L</th><th scope="col">Today</th></tr></thead>
               <tbody data-positions></tbody>
             </table>
           </div>
