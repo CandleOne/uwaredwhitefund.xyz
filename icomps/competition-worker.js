@@ -660,24 +660,37 @@ async function tradableAssets(env, scheduled = false) {
   const all = await alpaca(env, "/v1/assets?status=active&asset_class=us_equity", {}, scheduled);
   const list = (Array.isArray(all) ? all : [])
     .filter((a) => a.tradable && SYMBOL_RE.test(a.symbol))
-    .map((a) => ({ symbol: a.symbol, name: String(a.name || "").slice(0, 120) }));
+    .map((a) => {
+      const name = String(a.name || "").replace(/\s+(Common Stock|Ordinary Shares|Common Shares)\b.*$/i, "").slice(0, 120);
+      return { symbol: a.symbol, name, exchange: String(a.exchange || "").slice(0, 10), type: ETF_NAME_RE.test(name) ? "ETF" : "STOCK" };
+    });
   assetCache = { at: Date.now(), list };
   return list;
 }
 
+// Alpaca's asset list has no instrument type, so ETFs are recognised from the fund name.
+const ETF_NAME_RE = /\b(ETF|ETN|Fund|iShares|SPDR|Invesco QQQ|ProShares|Direxion|WisdomTree|Vanguard|Select Sector)\b/i;
+const POPULAR_TICKERS = ["SPY", "QQQ", "DIA", "IWM", "AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "GOOGL", "META", "AMD"];
+
 async function searchTickers(req, env, teamId) {
   const q = String(new URL(req.url).searchParams.get("q") || "").trim().toUpperCase().slice(0, 40);
-  if (!q) return reply(req, env, { results: [] });
   const list = await tradableAssets(env);
-  const lower = q.toLowerCase();
-  const bySymbol = [];
-  const byName = [];
-  for (const a of list) {
-    if (a.symbol.startsWith(q)) bySymbol.push(a);
-    else if (a.name.toLowerCase().includes(lower)) byName.push(a);
-    if (bySymbol.length >= 20) break;
+  let results;
+  if (!q) {
+    const bySymbol = new Map(list.map((a) => [a.symbol, a]));
+    results = POPULAR_TICKERS.map((s) => bySymbol.get(s)).filter(Boolean);
+  } else {
+    const lower = q.toLowerCase();
+    const buckets = [[], [], [], []];
+    for (const a of list) {
+      const name = a.name.toLowerCase();
+      if (a.symbol === q) buckets[0].push(a);
+      else if (a.symbol.startsWith(q)) buckets[1].push(a);
+      else if (name.startsWith(lower)) buckets[2].push(a);
+      else if (name.includes(lower)) buckets[3].push(a);
+    }
+    results = buckets.flat().slice(0, 20);
   }
-  const results = [...bySymbol, ...byName].slice(0, 20);
   const res = reply(req, env, { results });
   res.headers.set("Cache-Control", "private, max-age=300");
   return res;

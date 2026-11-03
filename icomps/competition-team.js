@@ -24,8 +24,12 @@
   let activeSymbol = "SPY";
   const tickerInput = $("[data-ticker-input]");
   const tickerNames = new Map();
+  const tickerList = $("[data-ticker-results]");
   let tickerRequest = 0;
   let tickerTimer = null;
+  let popularTickers = null;
+  let resultsQuery = "";
+  let highlighted = -1;
   const chartEl = $("[data-chart]");
   const chartStatus = $("[data-chart-status]");
 
@@ -99,6 +103,8 @@
     activeSymbol = symbol;
     orderForm.elements.symbol.value = symbol;
     tickerInput.value = "";
+    clearTimeout(tickerTimer);
+    showTickers("");
     updateHeld();
     renderCurrent();
     loadChart(symbol);
@@ -107,36 +113,113 @@
   function renderCurrent() {
     const name = tickerNames.get(activeSymbol);
     $("[data-ticker-current]").textContent = name ? `${activeSymbol} · ${name}` : activeSymbol;
+    tickerList.querySelectorAll(".ticker-row").forEach((li) => li.classList.toggle("is-active", li.dataset.symbol === activeSymbol));
   }
 
-  function renderOptions(results) {
+  function avatarHue(symbol) {
+    let hue = 0;
+    for (const ch of symbol) hue = (hue * 31 + ch.charCodeAt(0)) % 360;
+    return hue;
+  }
+
+  function tickerRow(r, index) {
+    const li = document.createElement("li");
+    li.id = `ticker-opt-${index}`;
+    li.className = "ticker-row";
+    li.setAttribute("role", "option");
+    li.dataset.symbol = r.symbol;
+
+    const avatar = document.createElement("span");
+    avatar.className = "ticker-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.style.background = `hsl(${avatarHue(r.symbol)} 55% 38%)`;
+    avatar.textContent = r.symbol[0];
+
+    const info = document.createElement("span");
+    info.className = "ticker-info";
+    const symbol = document.createElement("strong");
+    symbol.textContent = r.symbol;
+    const sub = document.createElement("span");
+    sub.className = "ticker-sub";
+    const name = document.createElement("span");
+    name.className = "ticker-name";
+    name.textContent = r.name || r.symbol;
+    const badge = document.createElement("span");
+    badge.className = "ticker-badge";
+    badge.textContent = r.type || "STOCK";
+    sub.append(name, badge);
+    info.append(symbol, sub);
+
+    const exchange = document.createElement("span");
+    exchange.className = "ticker-exchange";
+    exchange.textContent = r.exchange || "";
+
+    li.append(avatar, info, exchange);
+    return li;
+  }
+
+  function setHighlight(index) {
+    highlighted = index;
+    [...tickerList.children].forEach((li, i) => {
+      const on = i === index;
+      li.classList.toggle("is-highlighted", on);
+      if (li.getAttribute("role") === "option") li.setAttribute("aria-selected", String(on));
+      if (on) li.scrollIntoView?.({ block: "nearest" });
+    });
+    if (index >= 0) tickerInput.setAttribute("aria-activedescendant", `ticker-opt-${index}`);
+    else tickerInput.removeAttribute("aria-activedescendant");
+  }
+
+  function renderTickerNote(text) {
+    const li = document.createElement("li");
+    li.className = "ticker-note";
+    li.textContent = text;
+    tickerList.replaceChildren(li);
+    setHighlight(-1);
+  }
+
+  function renderResults(results, query) {
     results.forEach((r) => tickerNames.set(r.symbol, r.name));
-    $("[data-ticker-options]").replaceChildren(...results.map((r) => {
-      const opt = document.createElement("option");
-      opt.value = r.symbol;
-      opt.label = r.name || r.symbol;
-      return opt;
-    }));
+    resultsQuery = query;
+    $("[data-ticker-heading]").textContent = query ? "Results" : "Popular";
+    if (!results.length) {
+      renderTickerNote(`No matches for "${query}".`);
+    } else {
+      tickerList.replaceChildren(...results.map(tickerRow));
+      setHighlight(query ? 0 : -1);
+    }
+    renderCurrent();
   }
 
-  async function searchTickers(q) {
+  async function showTickers(q) {
     const request = ++tickerRequest;
+    if (!q && popularTickers) {
+      renderResults(popularTickers, "");
+      return;
+    }
     try {
       const data = await C.api(`/teams/${encodeURIComponent(teamId)}/tickers?q=${encodeURIComponent(q)}`, { teamKey });
-      if (request === tickerRequest) renderOptions(data.results);
+      if (request !== tickerRequest) return;
+      if (!q) popularTickers = data.results;
+      renderResults(data.results, q);
     } catch {
-      if (request === tickerRequest) $("[data-ticker-options]").replaceChildren();
+      if (request === tickerRequest) renderTickerNote("Ticker search is unavailable right now.");
     }
   }
 
   function commitTickerSearch() {
-    const value = tickerInput.value.trim().toUpperCase();
-    if (!value) return;
-    if (!/^[A-Z]{1,5}(\.[A-Z])?$/.test(value)) {
+    const q = tickerInput.value.trim().toUpperCase();
+    const row = tickerList.children[highlighted];
+    if (row?.dataset.symbol && resultsQuery.toUpperCase() === q) {
+      selectTicker(row.dataset.symbol);
+      return;
+    }
+    if (!q) return;
+    if (!/^[A-Z]{1,5}(\.[A-Z])?$/.test(q)) {
       setChartStatus("Pick a ticker from the search results.", true);
       return;
     }
-    if (value !== activeSymbol) selectTicker(value);
+    selectTicker(q);
   }
 
   function heldShares(symbol) {
@@ -296,16 +379,30 @@
 
   tickerInput.addEventListener("input", () => {
     clearTimeout(tickerTimer);
+    if (!teamKey) return;
     const q = tickerInput.value.trim();
-    if (!q || !teamKey) return;
-    tickerTimer = setTimeout(() => searchTickers(q), 250);
+    tickerTimer = setTimeout(() => showTickers(q), q ? 200 : 0);
   });
-  tickerInput.addEventListener("change", commitTickerSearch);
   tickerInput.addEventListener("keydown", (e) => {
+    const count = tickerList.querySelectorAll(".ticker-row").length;
     if (e.key === "Enter") {
       e.preventDefault();
       commitTickerSearch();
+    } else if (e.key === "ArrowDown" && count) {
+      e.preventDefault();
+      setHighlight(Math.min(highlighted + 1, count - 1));
+    } else if (e.key === "ArrowUp" && count) {
+      e.preventDefault();
+      setHighlight(Math.max(highlighted - 1, 0));
+    } else if (e.key === "Escape" && tickerInput.value) {
+      tickerInput.value = "";
+      clearTimeout(tickerTimer);
+      showTickers("");
     }
+  });
+  tickerList.addEventListener("click", (e) => {
+    const row = e.target.closest(".ticker-row");
+    if (row) selectTicker(row.dataset.symbol);
   });
   orderForm.elements.side.addEventListener("change", updateHeld);
   orderForm.addEventListener("input", clearReview);
