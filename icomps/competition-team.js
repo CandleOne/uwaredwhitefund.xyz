@@ -78,6 +78,7 @@
   async function refresh() {
     try {
       render(await C.api(`/teams/${encodeURIComponent(teamId)}`, { teamKey }));
+      signin.hidden = true;
       C.showError(errorEl, "");
     } catch (err) {
       dash.hidden = true;
