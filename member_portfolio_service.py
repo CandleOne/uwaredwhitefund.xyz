@@ -789,9 +789,14 @@ def create_app(settings: Settings | None = None) -> Flask:
             for field, limit in limits.items():
                 if field in role:
                     value = role[field]
-                    if not isinstance(value, str) or len(value.strip()) > limit:
-                        return None, (jsonify(error=f"{field} must be text up to {limit} characters."), 400)
-                    entry[field] = value.strip()
+                    if field == "holder" and isinstance(value, list):
+                        if len(value) > 8 or any(not isinstance(name, str) or len(name.strip()) > limit for name in value):
+                            return None, (jsonify(error=f"{field} must be up to 8 names of {limit} characters."), 400)
+                        entry[field] = [name.strip() for name in value if name.strip()]
+                    else:
+                        if not isinstance(value, str) or len(value.strip()) > limit:
+                            return None, (jsonify(error=f"{field} must be text up to {limit} characters."), 400)
+                        entry[field] = value.strip()
             if "duties" in role:
                 duties = role["duties"]
                 if (

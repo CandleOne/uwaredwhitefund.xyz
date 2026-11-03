@@ -44,5 +44,9 @@ h1 { margin:0; font-size:1.7rem; } header p { margin:4px 0 0; color:var(--muted)
 #msg { font-size:.88rem; } #msg.err { color:#b00020; } #msg.ok { color:#1e6b30; }
 #panel label { display:block; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-top:14px; }
 #panel input, #panel textarea { width:100%; font:inherit; font-size:.92rem; padding:7px 9px; border:1px solid #bbb; border-radius:4px; margin-top:4px; }
+#holder-list { display:flex; flex-direction:column; gap:6px; }
+.holder-row { display:flex; gap:6px; align-items:center; }
+.holder-row input { flex:1; }
+.remove-holder { border:1px solid #bbb; background:#fff; color:var(--crimson); border-radius:4px; padding:4px 9px; font-size:1rem; cursor:pointer; }
 #panel .btn { margin-top:16px; }
 .node.dirty::after { content:""; position:absolute; top:4px; right:4px; width:8px; height:8px; border-radius:50%; background:var(--crimson); }

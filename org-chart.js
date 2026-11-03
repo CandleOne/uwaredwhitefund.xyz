@@ -27,6 +27,8 @@
 
 	const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 	const label = r => r.title + (r.num ? " " + r.num : "");
+	const holders = r => Array.isArray(r.holder) ? r.holder : (r.holder ? [r.holder] : []);
+	const holderText = r => holders(r).join(", ");
 	const nums = [1, 2, 3, 4, 5, 6, 7];
 	const row = html => `<div class="row">${html}</div>`;
 	const dirty = new Set();
@@ -34,8 +36,8 @@
 	const panel = document.getElementById("panel"), body = document.getElementById("body"), chart = document.getElementById("chart");
 
 	function node(id, cls = "") {
-		const r = ROLES[id], open = !r.holder;
-		return `<button class="node ${cls} ${open ? "open" : ""} ${dirty.has(id) ? "dirty" : ""}" data-id="${id}"><span class="t">${esc(label(r))}</span>${r.short ? `<span class="d">${esc(r.short)}</span>` : ""}<span class="n">${open ? "Open" : esc(r.holder)}</span></button>`;
+		const r = ROLES[id], open = !holders(r).length;
+		return `<button class="node ${cls} ${open ? "open" : ""} ${dirty.has(id) ? "dirty" : ""}" data-id="${id}"><span class="t">${esc(label(r))}</span>${r.short ? `<span class="d">${esc(r.short)}</span>` : ""}<span class="n">${open ? "Open" : esc(holderText(r))}</span></button>`;
 	}
 
 	function renderChart() {
@@ -57,14 +59,16 @@
 	}
 
 	function show(id) {
-		const r = ROLES[id], open = !r.holder;
+		const r = ROLES[id], currentHolders = holders(r), open = !currentHolders.length;
 		current = id;
 		document.querySelectorAll(".node.sel").forEach(n => n.classList.remove("sel"));
 		document.querySelector(`[data-id="${id}"]`).classList.add("sel");
 		if (editable) {
 			body.innerHTML = `<h3>${esc(label(r))}</h3>
 				<label for="f-title">Position name</label><input id="f-title" maxlength="100" value="${esc(r.title)}">
-				<label for="f-holder">Currently held by (blank = open)</label><input id="f-holder" maxlength="100" value="${esc(r.holder)}">
+				<label>Currently held by (blank = open)</label>
+				<div id="holder-list">${currentHolders.map((name, i) => `<div class="holder-row"><input class="f-holder" maxlength="100" value="${esc(name)}">${i ? `<button class="remove-holder" type="button" aria-label="Remove holder">&minus;</button>` : ""}</div>`).join("")}</div>
+				<button class="btn" id="add-holder" type="button">+ Add person</button>
 				<label for="f-summary">Role summary</label><textarea id="f-summary" rows="3" maxlength="500">${esc(r.summary)}</textarea>
 				<label for="f-duties">Responsibilities (one per line)</label><textarea id="f-duties" rows="6">${esc(r.duties.join("\n"))}</textarea>
 				<label for="f-req">Requirements for openings</label><textarea id="f-req" rows="3" maxlength="500">${esc(r.requirements)}</textarea>
@@ -72,15 +76,15 @@
 				<p style="margin-top:10px;color:#687078;font-size:.82rem">Changes go live on the public page after you click Save &amp; publish.</p>`;
 		} else {
 			const same = Object.entries(ROLES).filter(([, x]) => x.title === r.title);
-			const openCount = same.filter(([, x]) => !x.holder).length;
+			const openCount = same.filter(([, x]) => !holders(x).length).length;
 			body.innerHTML = `<h3>${esc(label(r))}</h3>
 				<span class="badge ${open ? "o" : "f"}">${open ? "Open position" : "Filled"}</span>
 				<h4>Role</h4><p>${esc(r.summary)}</p>
 				<h4>Responsibilities</h4><ul>${r.duties.map(d => `<li>${esc(d)}</li>`).join("")}</ul>
-				<h4>Currently held by</h4><p>${open ? "Vacant &mdash; no one currently holds this role." : esc(r.holder)}</p>
+				<h4>Currently held by</h4><p>${open ? "Vacant &mdash; no one currently holds this role." : esc(holderText(r))}</p>
 				${r.requirements ? `<h4>Requirements</h4><p>${esc(r.requirements)}</p>` : ""}
 				<h4>Openings</h4>
-				${same.length > 1 ? `<p>${openCount} of ${same.length} ${esc(r.title)} seats open:</p>` + same.map(([k, x]) => `<div class="slot"><a href="#" data-jump="${k}">${esc(label(x))}</a><span>${x.holder ? esc(x.holder) : "Open"}</span></div>`).join("") : `<p>${open ? "This position is open." : "No openings."}</p>`}
+				${same.length > 1 ? `<p>${openCount} of ${same.length} ${esc(r.title)} seats open:</p>` + same.map(([k, x]) => `<div class="slot"><a href="#" data-jump="${k}">${esc(label(x))}</a><span>${holders(x).length ? esc(holderText(x)) : "Open"}</span></div>`).join("") : `<p>${open ? "This position is open." : "No openings."}</p>`}
 				${open ? `<a class="apply" href="${APPLY_URL}">Apply now</a>` : ""}`;
 		}
 		panel.classList.add("show");
@@ -92,6 +96,7 @@
 		for (const [key, vals] of Object.entries(saved || {})) {
 			if (!ROLES[key]) continue;
 			for (const f of EDITABLE) if (f in vals) ROLES[key][f] = vals[f];
+			if (Array.isArray(ROLES[key].holder)) ROLES[key].holder = ROLES[key].holder.filter(Boolean);
 		}
 	}
 
@@ -133,13 +138,20 @@
 		if (e.target.id === "apply-edit" && current) {
 			const r = ROLES[current];
 			r.title = document.getElementById("f-title").value.trim() || DEFAULTS[current].title;
-			r.holder = document.getElementById("f-holder").value.trim();
+			r.holder = [...document.querySelectorAll(".f-holder")].map(input => input.value.trim()).filter(Boolean);
 			r.summary = document.getElementById("f-summary").value.trim();
 			r.duties = document.getElementById("f-duties").value.split("\n").map(x => x.trim()).filter(Boolean);
 			r.requirements = document.getElementById("f-req").value.trim();
 			dirty.add(current); renderChart(); setMsg("Unsaved changes — click Save & publish.");
 			document.getElementById("save").disabled = false;
 		}
+		if (e.target.id === "add-holder") {
+			const row = document.createElement("div");
+			row.className = "holder-row";
+			row.innerHTML = '<input class="f-holder" maxlength="100" aria-label="Holder name"><button class="remove-holder" type="button" aria-label="Remove holder">&minus;</button>';
+			document.getElementById("holder-list").append(row);
+		}
+		if (e.target.classList.contains("remove-holder")) e.target.closest(".holder-row").remove();
 	});
 	document.getElementById("close").onclick = hide;
 	document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
