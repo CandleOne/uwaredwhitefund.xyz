@@ -352,6 +352,22 @@
     font-size: 0.85rem;
 }
 
+.competition-team-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.competition-team-controls input {
+    width: 110px;
+    min-height: 38px;
+    border: 1px solid var(--line);
+    padding: 8px 10px;
+    font: inherit;
+}
+
 .event-admin-remove {
     flex: 0 0 auto;
     border: 1px solid var(--crimson);

@@ -25,6 +25,12 @@ const adminTabs = [...document.querySelectorAll("[data-admin-tab]")];
 const adminPanels = [...document.querySelectorAll("[data-admin-panel]")];
 const applicationList = document.querySelector("[data-application-list]");
 const applicationListStatus = document.querySelector("[data-application-list-status]");
+const competitionApiBase = "https://red-white-competition-api.rwifc.workers.dev";
+const competitionTokenInput = document.querySelector("#competition-admin-token");
+const competitionMessage = document.querySelector("[data-competition-message]");
+const competitionList = document.querySelector("[data-competition-team-list]");
+const competitionListStatus = document.querySelector("[data-competition-team-list-status]");
+const competitionRefreshButton = document.querySelector("[data-competition-refresh]");
 let csrfToken = "";
 let editingEventId = null;
 let eventPosterCount = 0;
@@ -230,6 +236,75 @@ async function loadApplications() {
   if (!response.ok) throw new Error(payload.error || "Unable to load applications.");
   if (!Array.isArray(payload.applications)) throw new Error("The application service returned an invalid application list.");
   renderApplicationList(payload.applications);
+}
+
+function showCompetitionMessage(text, isError = false) {
+  competitionMessage.textContent = text;
+  competitionMessage.hidden = false;
+  competitionMessage.classList.toggle("is-error", isError);
+}
+
+async function competitionFetch(path, options = {}) {
+  const token = competitionTokenInput.value.trim();
+  if (!token) throw new Error("Enter the competition admin token.");
+  const response = await fetch(`${competitionApiBase}/v1/competition${path}`, {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      "X-Admin-Token": token,
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "Competition request failed.");
+  return payload;
+}
+
+function renderCompetitionTeams(teams) {
+  competitionList.replaceChildren();
+  competitionListStatus.hidden = teams.length > 0;
+  competitionListStatus.textContent = teams.length ? "" : "No competition teams have registered.";
+  teams.forEach((team) => {
+    const item = document.createElement("li");
+    item.className = "event-admin-item competition-team-item";
+    const description = document.createElement("div");
+    const name = document.createElement("p");
+    name.className = "event-admin-item-title";
+    name.textContent = team.name;
+    const details = document.createElement("p");
+    details.className = "event-admin-item-details";
+    const balance = team.equity === null ? "No snapshot" : `$${Number(team.equity || 0).toLocaleString()}`;
+    details.textContent = `${team.id} · ${team.lead_email} · ${team.status.replace("_", " ")} · ${balance}`;
+    description.append(name, details);
+
+    const controls = document.createElement("div");
+    controls.className = "competition-team-controls";
+    const amount = document.createElement("input");
+    amount.type = "number";
+    amount.min = "0.01";
+    amount.step = "0.01";
+    amount.placeholder = "Amount";
+    amount.setAttribute("aria-label", `Funding amount for ${team.name}`);
+    const fundButton = document.createElement("button");
+    fundButton.className = "event-admin-remove";
+    fundButton.type = "button";
+    fundButton.textContent = "Add money";
+    fundButton.dataset.fundTeamId = team.id;
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "event-admin-remove";
+    deleteButton.type = "button";
+    deleteButton.textContent = "Remove";
+    deleteButton.dataset.deleteTeamId = team.id;
+    controls.append(amount, fundButton, deleteButton);
+    item.append(description, controls);
+    competitionList.append(item);
+  });
+}
+
+async function loadCompetitionTeams() {
+  competitionListStatus.hidden = false;
+  competitionListStatus.textContent = "Loading competition teams…";
+  const payload = await competitionFetch("/admin/teams");
+  renderCompetitionTeams(payload.teams || []);
 }
 
 async function initialize() {
@@ -563,5 +638,57 @@ applicationList.addEventListener("click", async (event) => {
     deleteButton.disabled = false;
     applicationListStatus.hidden = false;
     applicationListStatus.textContent = error.message;
+  }
+});
+
+competitionRefreshButton.addEventListener("click", async () => {
+  try {
+    await loadCompetitionTeams();
+    showCompetitionMessage("Competition teams loaded.");
+  } catch (error) {
+    competitionListStatus.hidden = false;
+    competitionListStatus.textContent = error.message;
+    showCompetitionMessage(error.message, true);
+  }
+});
+
+competitionList.addEventListener("click", async (event) => {
+  const fundButton = event.target.closest("[data-fund-team-id]");
+  if (fundButton) {
+    const row = fundButton.closest(".competition-team-item");
+    const amountInput = row.querySelector("input");
+    const amount = Number(amountInput.value);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showCompetitionMessage("Enter a funding amount greater than zero.", true);
+      return;
+    }
+    fundButton.disabled = true;
+    try {
+      await competitionFetch(`/admin/teams/${fundButton.dataset.fundTeamId}/fund`, {
+        method: "POST",
+        body: JSON.stringify({ amount }),
+      });
+      showCompetitionMessage("Funding transfer submitted. Sandbox settlement may take several minutes.");
+      amountInput.value = "";
+    } catch (error) {
+      showCompetitionMessage(error.message, true);
+    } finally {
+      fundButton.disabled = false;
+    }
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-delete-team-id]");
+  if (!deleteButton) return;
+  const teamName = deleteButton.closest(".competition-team-item").querySelector(".event-admin-item-title").textContent;
+  if (!window.confirm(`Permanently remove ${teamName} from the competition?`)) return;
+  deleteButton.disabled = true;
+  try {
+    await competitionFetch(`/admin/teams/${deleteButton.dataset.deleteTeamId}`, { method: "DELETE" });
+    showCompetitionMessage("Team removed from the competition.");
+    await loadCompetitionTeams();
+  } catch (error) {
+    deleteButton.disabled = false;
+    showCompetitionMessage(error.message, true);
   }
 });

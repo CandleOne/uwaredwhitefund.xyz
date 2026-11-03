@@ -48,7 +48,7 @@ function corsHeaders(req, env) {
   const h = { Vary: "Origin" };
   if (origin && allowed.includes(origin)) {
     h["Access-Control-Allow-Origin"] = origin;
-    h["Access-Control-Allow-Headers"] = "Content-Type, X-Team-Key";
+    h["Access-Control-Allow-Headers"] = "Content-Type, X-Team-Key, X-Admin-Token";
     h["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS";
   }
   return h;
@@ -285,6 +285,11 @@ async function finishProvisioning(env, team, ip, scheduled = false) {
 
 /* ---------- auth ---------- */
 
+async function authAdmin(req, env) {
+  const token = req.headers.get("X-Admin-Token") || "";
+  return Boolean(env.COMPETITION_ADMIN_TOKEN && token && safeEqual(await sha256(token), await sha256(env.COMPETITION_ADMIN_TOKEN)));
+}
+
 async function authTeam(req, env, teamId) {
   const key = req.headers.get("X-Team-Key") || "";
   const team = await env.DB.prepare("SELECT * FROM teams WHERE id = ?").bind(teamId).first();
@@ -345,6 +350,50 @@ async function register(req, env) {
     await env.DB.prepare("DELETE FROM teams WHERE id = ?").bind(id).run();
     return fail(req, env, 502, "We couldn't create your portfolio. Try again in a minute.");
   }
+}
+
+async function adminListTeams(req, env) {
+  const { results } = await env.DB.prepare(
+    `SELECT t.id, t.name, t.lead_email, t.status, t.alpaca_account_id, t.created_at,
+            s.equity, s.cash
+       FROM teams t
+       LEFT JOIN equity_snapshots s ON s.team_id = t.id
+        AND s.ts = (SELECT MAX(ts) FROM equity_snapshots WHERE team_id = t.id)
+      ORDER BY t.created_at DESC`
+  ).all();
+  return reply(req, env, { teams: results });
+}
+
+async function adminFundTeam(req, env, teamId) {
+  const body = await readJson(req);
+  const amount = Number(body?.amount);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
+    return fail(req, env, 400, "Enter an amount from $0.01 to $1,000,000.");
+  }
+  const team = await env.DB.prepare("SELECT * FROM teams WHERE id = ?").bind(teamId).first();
+  if (!team) return fail(req, env, 404, "Team not found.");
+  if (!team.alpaca_account_id) return fail(req, env, 409, "This team does not have a portfolio account yet.");
+
+  const relationships = await alpaca(env, `/v1/accounts/${team.alpaca_account_id}/ach_relationships`);
+  const relationship = relationships.find((r) => r.status === "APPROVED") || relationships[0];
+  if (!relationship || relationship.status !== "APPROVED") {
+    return fail(req, env, 409, "The portfolio funding relationship is still being approved.");
+  }
+  await alpaca(env, `/v1/accounts/${team.alpaca_account_id}/transfers`, {
+    method: "POST",
+    body: JSON.stringify({
+      transfer_type: "ach",
+      relationship_id: relationship.id,
+      amount: amount.toFixed(2),
+      direction: "INCOMING",
+    }),
+  });
+  return reply(req, env, { ok: true });
+}
+
+async function adminDeleteTeam(req, env, teamId) {
+  await env.DB.prepare("DELETE FROM teams WHERE id = ?").bind(teamId).run();
+  return reply(req, env, { ok: true });
 }
 
 async function leaderboard(req, env) {
@@ -479,6 +528,17 @@ async function fetchHandler(req, env) {
     if (req.method === "GET" && path === "/config") return reply(req, env, getPhase(env));
     if (req.method === "GET" && path === "/leaderboard") return leaderboard(req, env);
     if (req.method === "POST" && path === "/register") return register(req, env);
+
+    if (path.startsWith("/admin/")) {
+      if (!(await authAdmin(req, env))) return fail(req, env, 401, "Competition admin token is missing or incorrect.");
+      if (req.method === "GET" && path === "/admin/teams") return adminListTeams(req, env);
+      const adminMatch = path.match(/^\/admin\/teams\/([a-z0-9-]+)(\/fund)?$/);
+      if (adminMatch) {
+        if (!adminMatch[2] && req.method === "DELETE") return adminDeleteTeam(req, env, adminMatch[1]);
+        if (adminMatch[2] === "/fund" && req.method === "POST") return adminFundTeam(req, env, adminMatch[1]);
+      }
+      return fail(req, env, 404, "Not found.");
+    }
 
     const m = path.match(/^\/teams\/([a-z0-9-]+)(\/orders|\/strategy)?$/);
     if (m) {

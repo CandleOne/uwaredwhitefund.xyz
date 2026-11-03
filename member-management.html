@@ -47,6 +47,10 @@
               <span class="admin-tab-icon" aria-hidden="true">↓</span>
               <span><strong>Applications</strong><small>Review submissions</small></span>
             </button>
+            <button class="admin-tab" id="admin-tab-competition" type="button" role="tab" aria-selected="false" aria-controls="admin-panel-competition" data-admin-tab="competition" tabindex="-1">
+              <span class="admin-tab-icon" aria-hidden="true">$</span>
+              <span><strong>Competition</strong><small>Fund or remove teams</small></span>
+            </button>
           </nav>
           <div class="admin-panels">
             <section class="admin-panel is-active" id="admin-panel-overview" role="tabpanel" aria-labelledby="admin-tab-overview" data-admin-panel="overview">
@@ -74,6 +78,11 @@
                 <button class="admin-tool-card" type="button" data-admin-tab-target="applications">
                   <span class="admin-card-icon">↓</span>
                   <span><strong>Applications</strong><small>Review and download applicant CSV files.</small></span>
+                  <span class="admin-card-arrow" aria-hidden="true">→</span>
+                </button>
+                <button class="admin-tool-card" type="button" data-admin-tab-target="competition">
+                  <span class="admin-card-icon">$</span>
+                  <span><strong>Competition</strong><small>Fund portfolios or remove teams.</small></span>
                   <span class="admin-card-arrow" aria-hidden="true">→</span>
                 </button>
               </div>
@@ -153,6 +162,23 @@
               </div>
               <p class="event-admin-status" data-application-list-status aria-live="polite">Loading applications…</p>
               <ul class="event-admin-list application-admin-list" data-application-list aria-live="polite"></ul>
+            </section>
+            <section class="admin-panel" id="admin-panel-competition" role="tabpanel" aria-labelledby="admin-tab-competition" data-admin-panel="competition" hidden>
+              <div class="admin-panel-header">
+                <p class="admin-eyebrow">Competition control</p>
+                <h3>Competition teams</h3>
+                <p>Add sandbox funding to a team portfolio or permanently remove a team from the competition.</p>
+              </div>
+              <form class="admin-form" onsubmit="return false">
+                <label class="login-field" for="competition-admin-token">Competition admin token<input id="competition-admin-token" type="password" autocomplete="off" required /></label>
+                <button class="login-submit" type="button" data-competition-refresh>Load Teams</button>
+                <p class="dashboard-error" data-competition-message role="alert" hidden></p>
+              </form>
+              <div class="event-admin-list-section">
+                <h3>Registered Teams</h3>
+                <p class="event-admin-status" data-competition-team-list-status aria-live="polite">Enter the competition admin token, then load teams.</p>
+                <ul class="event-admin-list application-admin-list" data-competition-team-list aria-live="polite"></ul>
+              </div>
             </section>
           </div>
         </div>
