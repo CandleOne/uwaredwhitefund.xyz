@@ -650,6 +650,39 @@ async function bars(req, env) {
   }
 }
 
+/* ---------- ticker search ---------- */
+
+const ASSET_CACHE_MS = 24 * 60 * 60 * 1000;
+let assetCache = { at: 0, list: [] };
+
+async function tradableAssets(env, scheduled = false) {
+  if (Date.now() - assetCache.at < ASSET_CACHE_MS && assetCache.list.length) return assetCache.list;
+  const all = await alpaca(env, "/v1/assets?status=active&asset_class=us_equity", {}, scheduled);
+  const list = (Array.isArray(all) ? all : [])
+    .filter((a) => a.tradable && SYMBOL_RE.test(a.symbol))
+    .map((a) => ({ symbol: a.symbol, name: String(a.name || "").slice(0, 120) }));
+  assetCache = { at: Date.now(), list };
+  return list;
+}
+
+async function searchTickers(req, env, teamId) {
+  const q = String(new URL(req.url).searchParams.get("q") || "").trim().toUpperCase().slice(0, 40);
+  if (!q) return reply(req, env, { results: [] });
+  const list = await tradableAssets(env);
+  const lower = q.toLowerCase();
+  const bySymbol = [];
+  const byName = [];
+  for (const a of list) {
+    if (a.symbol.startsWith(q)) bySymbol.push(a);
+    else if (a.name.toLowerCase().includes(lower)) byName.push(a);
+    if (bySymbol.length >= 20) break;
+  }
+  const results = [...bySymbol, ...byName].slice(0, 20);
+  const res = reply(req, env, { results });
+  res.headers.set("Cache-Control", "private, max-age=300");
+  return res;
+}
+
 /* ---------- router ---------- */
 
 async function fetchHandler(req, env) {
@@ -685,7 +718,7 @@ async function fetchHandler(req, env) {
       return fail(req, env, 404, "Not found.");
     }
 
-    const m = path.match(/^\/teams\/([a-z0-9-]+)(\/orders|\/strategy|\/bars)?$/);
+    const m = path.match(/^\/teams\/([a-z0-9-]+)(\/orders|\/strategy|\/bars|\/tickers)?$/);
     if (m) {
       const team = await authTeam(req, env, m[1]);
       if (!team) return fail(req, env, 401, "Team passcode is missing or incorrect.");
@@ -693,6 +726,7 @@ async function fetchHandler(req, env) {
       if (m[2] === "/orders" && req.method === "POST") return placeOrder(req, env, team);
       if (m[2] === "/strategy" && req.method === "PUT") return saveStrategy(req, env, team);
       if (m[2] === "/bars" && req.method === "GET") return bars(req, env);
+      if (m[2] === "/tickers" && req.method === "GET") return searchTickers(req, env, m[1]);
     }
     return fail(req, env, 404, "Not found.");
   } catch (err) {

@@ -21,8 +21,11 @@
   let candles = null;
   let chartRequest = 0;
   let chartTimer = null;
-  const DEFAULT_TICKERS = ["SPY", "QQQ", "DIA", "IWM"];
   let activeSymbol = "SPY";
+  const tickerInput = $("[data-ticker-input]");
+  const tickerNames = new Map();
+  let tickerRequest = 0;
+  let tickerTimer = null;
   const chartEl = $("[data-chart]");
   const chartStatus = $("[data-chart-status]");
 
@@ -87,7 +90,7 @@
       return;
     }
     activeSymbol = symbol;
-    renderNav();
+    renderCurrent();
     chartTimer = setTimeout(() => loadChart(symbol), 400);
   }
 
@@ -95,23 +98,45 @@
     clearTimeout(chartTimer);
     activeSymbol = symbol;
     orderForm.elements.symbol.value = symbol;
+    tickerInput.value = "";
     updateHeld();
-    renderNav();
+    renderCurrent();
     loadChart(symbol);
   }
 
-  function renderNav() {
-    const nav = $("[data-ticker-nav]");
-    const symbols = [...new Set([...DEFAULT_TICKERS, ...positions.map((p) => p.symbol)])];
-    nav.replaceChildren(...symbols.map((sym) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = sym;
-      btn.className = "ticker-btn";
-      btn.setAttribute("aria-pressed", String(sym === activeSymbol));
-      btn.addEventListener("click", () => selectTicker(sym));
-      return btn;
+  function renderCurrent() {
+    const name = tickerNames.get(activeSymbol);
+    $("[data-ticker-current]").textContent = name ? `${activeSymbol} · ${name}` : activeSymbol;
+  }
+
+  function renderOptions(results) {
+    results.forEach((r) => tickerNames.set(r.symbol, r.name));
+    $("[data-ticker-options]").replaceChildren(...results.map((r) => {
+      const opt = document.createElement("option");
+      opt.value = r.symbol;
+      opt.label = r.name || r.symbol;
+      return opt;
     }));
+  }
+
+  async function searchTickers(q) {
+    const request = ++tickerRequest;
+    try {
+      const data = await C.api(`/teams/${encodeURIComponent(teamId)}/tickers?q=${encodeURIComponent(q)}`, { teamKey });
+      if (request === tickerRequest) renderOptions(data.results);
+    } catch {
+      if (request === tickerRequest) $("[data-ticker-options]").replaceChildren();
+    }
+  }
+
+  function commitTickerSearch() {
+    const value = tickerInput.value.trim().toUpperCase();
+    if (!value) return;
+    if (!/^[A-Z]{1,5}(\.[A-Z])?$/.test(value)) {
+      setChartStatus("Pick a ticker from the search results.", true);
+      return;
+    }
+    if (value !== activeSymbol) selectTicker(value);
   }
 
   function heldShares(symbol) {
@@ -207,7 +232,7 @@
 
     positions = d.positions;
     buyingPower = Number(d.account.buying_power) || 0;
-    renderNav();
+    renderCurrent();
     updateHeld();
 
     const canTrade = d.tradingOpen && d.team.status === "active";
@@ -267,6 +292,20 @@
   orderForm.elements.symbol.addEventListener("input", () => {
     updateHeld();
     scheduleChart();
+  });
+
+  tickerInput.addEventListener("input", () => {
+    clearTimeout(tickerTimer);
+    const q = tickerInput.value.trim();
+    if (!q || !teamKey) return;
+    tickerTimer = setTimeout(() => searchTickers(q), 250);
+  });
+  tickerInput.addEventListener("change", commitTickerSearch);
+  tickerInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitTickerSearch();
+    }
   });
   orderForm.elements.side.addEventListener("change", updateHeld);
   orderForm.addEventListener("input", clearReview);

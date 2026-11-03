@@ -50,9 +50,16 @@
 .price-chart-canvas { width: 100%; height: 340px; }
 .chart-status { margin: 0 0 8px; min-height: 1.2em; }
 .chart-status.is-error { color: var(--crimson); }
-.ticker-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
-.ticker-btn { padding: 6px 14px; font: inherit; font-weight: 700; background: #fff; color: var(--crimson); border: 1px solid var(--crimson); cursor: pointer; }
-.ticker-btn[aria-pressed="true"] { background: var(--crimson); color: #fff; }
+.chart-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+.ticker-sidebar { border-right: 2px solid var(--crimson); padding-right: 16px; }
+.ticker-search { display: grid; gap: 6px; font-weight: 700; }
+.ticker-search input { padding: 8px; font: inherit; border: 1px solid #b8b8b8; }
+.ticker-current { margin: 12px 0 0; font-weight: 700; }
+.chart-main { min-width: 0; }
+@media (max-width: 700px) {
+  .chart-layout { grid-template-columns: 1fr; }
+  .ticker-sidebar { border-right: 0; border-bottom: 2px solid var(--crimson); padding: 0 0 12px; }
+}
 .order-held { margin: 12px 0 0; font-weight: 700; }
 .order-review { margin: 0 0 24px; padding: 20px 24px; background: #fff; border-left: 4px solid var(--crimson); }
 .order-summary { margin: 0 0 16px; }
