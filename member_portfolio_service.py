@@ -780,7 +780,7 @@ def create_app(settings: Settings | None = None) -> Flask:
         roles = payload.get("roles") if isinstance(payload, dict) else None
         if not isinstance(roles, dict):
             return None, (jsonify(error="A roles object is required."), 400)
-        limits = {"holder": 100, "summary": 500, "requirements": 500}
+        limits = {"title": 100, "holder": 100, "summary": 500, "requirements": 500}
         cleaned: dict[str, Any] = {}
         for key, role in roles.items():
             if key not in org_role_keys or not isinstance(role, dict):

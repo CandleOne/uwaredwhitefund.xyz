@@ -23,7 +23,7 @@
 	}
 	for (const r of Object.values(ROLES)) { r.holder = ""; r.requirements = ""; }
 	const DEFAULTS = JSON.parse(JSON.stringify(ROLES));
-	const EDITABLE = ["holder", "summary", "duties", "requirements"];
+	const EDITABLE = ["title", "holder", "summary", "duties", "requirements"];
 
 	const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 	const label = r => r.title + (r.num ? " " + r.num : "");
@@ -63,6 +63,7 @@
 		document.querySelector(`[data-id="${id}"]`).classList.add("sel");
 		if (editable) {
 			body.innerHTML = `<h3>${esc(label(r))}</h3>
+				<label for="f-title">Position name</label><input id="f-title" maxlength="100" value="${esc(r.title)}">
 				<label for="f-holder">Currently held by (blank = open)</label><input id="f-holder" maxlength="100" value="${esc(r.holder)}">
 				<label for="f-summary">Role summary</label><textarea id="f-summary" rows="3" maxlength="500">${esc(r.summary)}</textarea>
 				<label for="f-duties">Responsibilities (one per line)</label><textarea id="f-duties" rows="6">${esc(r.duties.join("\n"))}</textarea>
@@ -131,6 +132,7 @@
 		if (a) { e.preventDefault(); show(a.dataset.jump); return; }
 		if (e.target.id === "apply-edit" && current) {
 			const r = ROLES[current];
+			r.title = document.getElementById("f-title").value.trim() || DEFAULTS[current].title;
 			r.holder = document.getElementById("f-holder").value.trim();
 			r.summary = document.getElementById("f-summary").value.trim();
 			r.duties = document.getElementById("f-duties").value.split("\n").map(x => x.trim()).filter(Boolean);
