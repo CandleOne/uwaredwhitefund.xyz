@@ -507,8 +507,8 @@ async function teamDetail(req, env, team) {
       team: { id: team.id, name: team.name, status: team.status },
       members: members.results,
       account: {
-        equity: String(STARTING_CAPITAL),
-        last_equity: String(STARTING_CAPITAL),
+        equity: "0",
+        last_equity: "0",
         cash: "0",
         buying_power: "0",
         long_market_value: "0",

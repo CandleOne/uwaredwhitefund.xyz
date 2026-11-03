@@ -24,7 +24,7 @@
     const isActive = d.team.status === "active";
     phaseEl.textContent = isActive
       ? C.phaseMessage(d)
-      : "Your portfolio is still being funded. Trading unlocks once it finishes.";
+      : `Your portfolio is still being funded. The $${STARTING.toLocaleString()} competition allocation will appear once it finishes.`;
 
     const equity = Number(d.account.equity);
     const ret = ((equity - STARTING) / STARTING) * 100;
