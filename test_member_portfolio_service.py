@@ -323,6 +323,27 @@ class MemberServiceTest(unittest.TestCase):
         trading_client.assert_called_with("default-key", "default-secret", paper=True)
 
 
+    def test_manager_can_delete_application(self):
+        token = self.status().json["csrf_token"]
+        self.post("/v1/auth/setup", token, {"email": "manager@example.com", "password": "test-password-123"})
+        token = self.status().json["csrf_token"]
+        headers = {**self.origin, "X-CSRF-Token": token}
+        response = self.client.post("/v1/applications", headers=headers, json={
+            "name": "Test Applicant",
+            "preferred_email": "test@example.com",
+            "current_class_status": "Junior",
+            "expected_graduation_date": "2027-05",
+            "majors": "Finance",
+            "interest_reason": "Testing application deletion.",
+        })
+        self.assertEqual(response.status_code, 201)
+        application_id = self.client.get("/v1/applications", headers=headers).json["applications"][0]["id"]
+        self.assertEqual(self.client.delete(f"/v1/applications/{application_id}").status_code, 403)
+        self.assertEqual(self.client.delete(f"/v1/applications/{application_id}", headers={**self.origin, "X-CSRF-Token": "bad"}).status_code, 403)
+        self.assertEqual(self.client.delete(f"/v1/applications/{application_id}", headers=headers).status_code, 200)
+        self.assertEqual(self.client.get("/v1/applications", headers=headers).json["applications"], [])
+        self.assertEqual(self.client.get(f"/v1/applications/{application_id}", headers=headers).status_code, 404)
+
     def test_manager_can_publish_org_chart(self):
         anonymous = self.app.test_client()
         self.assertEqual(anonymous.get("/v1/org-chart").json["roles"], {})

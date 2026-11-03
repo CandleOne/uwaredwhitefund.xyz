@@ -206,12 +206,20 @@ function renderApplicationList(applications) {
     details.className = "event-admin-item-details";
     details.textContent = `${application.applicant_email} · Submitted ${application.submitted_at}`;
     description.append(name, details);
+    const actions = document.createElement("div");
+    actions.className = "event-admin-actions";
     const downloadButton = document.createElement("button");
     downloadButton.className = "event-admin-remove";
     downloadButton.type = "button";
     downloadButton.textContent = "Download CSV";
     downloadButton.dataset.downloadApplicationId = application.id;
-    item.append(description, downloadButton);
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "event-admin-remove";
+    deleteButton.type = "button";
+    deleteButton.textContent = "Delete";
+    deleteButton.dataset.deleteApplicationId = application.id;
+    actions.append(downloadButton, deleteButton);
+    item.append(description, actions);
     applicationList.append(item);
   });
 }
@@ -508,28 +516,52 @@ eventList.addEventListener("click", async (event) => {
 });
 
 applicationList.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-download-application-id]");
-  if (!button) return;
-  button.disabled = true;
-  try {
-    const response = await fetch(`${apiBaseUrl}/v1/applications/${button.dataset.downloadApplicationId}`, {
-      credentials: "include",
-    });
-    if (!response.ok) {
-      const result = await response.json();
-      throw new Error(result.error || "Unable to download application.");
+  const downloadButton = event.target.closest("[data-download-application-id]");
+  if (downloadButton) {
+    downloadButton.disabled = true;
+    try {
+      const response = await fetch(`${apiBaseUrl}/v1/applications/${downloadButton.dataset.downloadApplicationId}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Unable to download application.");
+      }
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const download = document.createElement("a");
+      download.href = downloadUrl;
+      download.download = `application-${downloadButton.dataset.downloadApplicationId}.csv`;
+      download.click();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      applicationListStatus.hidden = false;
+      applicationListStatus.textContent = error.message;
+    } finally {
+      downloadButton.disabled = false;
     }
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const download = document.createElement("a");
-    download.href = downloadUrl;
-    download.download = `application-${button.dataset.downloadApplicationId}.csv`;
-    download.click();
-    URL.revokeObjectURL(downloadUrl);
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-delete-application-id]");
+  if (!deleteButton) return;
+  const applicationId = deleteButton.dataset.deleteApplicationId;
+  if (!window.confirm("Permanently delete this application and its CSV file?")) return;
+  deleteButton.disabled = true;
+  try {
+    const response = await fetch(`${apiBaseUrl}/v1/applications/${applicationId}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "X-CSRF-Token": csrfToken },
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Unable to delete application.");
+    applicationListStatus.hidden = false;
+    applicationListStatus.textContent = result.message || "Application deleted.";
+    await loadApplications();
   } catch (error) {
+    deleteButton.disabled = false;
     applicationListStatus.hidden = false;
     applicationListStatus.textContent = error.message;
-  } finally {
-    button.disabled = false;
   }
 });

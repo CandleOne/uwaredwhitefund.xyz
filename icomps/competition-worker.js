@@ -111,15 +111,44 @@ async function readJson(req) {
 
 /* ---------- Alpaca Broker API ---------- */
 
-async function alpaca(env, path, init = {}) {
+let alpacaToken = null;
+let alpacaTokenExpiresAt = 0;
+
+async function alpacaAccessToken(env, scheduled = false) {
+  if (!scheduled && alpacaToken && Date.now() < alpacaTokenExpiresAt) return alpacaToken;
+  const authBase = new URL("https://authx.sandbox.alpaca.markets/v1/oauth2/token");
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: env.ALPACA_KEY,
+    client_secret: env.ALPACA_SECRET,
+  });
+  const res = await fetch(authBase, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    body,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(`Alpaca auth ${res.status} POST /v1/oauth2/token`);
+    err.status = res.status;
+    err.body = data;
+    throw err;
+  }
+  alpacaToken = data.access_token;
+  alpacaTokenExpiresAt = Date.now() + Math.max(0, Number(data.expires_in || 0) - 60) * 1000;
+  return alpacaToken;
+}
+
+async function alpaca(env, path, init = {}, scheduled = false) {
   const brokerBase = new URL(env.ALPACA_BROKER_BASE);
   if (brokerBase.protocol !== "https:" || brokerBase.hostname !== BROKER_SANDBOX_HOST) {
     throw new Error("The competition can only connect to the Alpaca Broker API sandbox.");
   }
+  const token = await alpacaAccessToken(env, scheduled);
   const res = await fetch(brokerBase.origin + path, {
     ...init,
     headers: {
-      Authorization: "Basic " + btoa(`${env.ALPACA_KEY}:${env.ALPACA_SECRET}`),
+      Authorization: `Bearer ${token}`,
       Accept: "application/json",
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...init.headers,
@@ -186,11 +215,12 @@ function accountPayload(env, team, ip) {
 }
 
 /* Idempotent-ish: safe to call again for a team stuck in pending_funding. */
-async function finishProvisioning(env, team, ip) {
+async function finishProvisioning(env, team, ip, scheduled = false) {
   let accountId = team.alpaca_account_id;
+  const call = (path, init) => alpaca(env, path, init, scheduled);
 
   if (!accountId) {
-    const acct = await alpaca(env, "/v1/accounts", { method: "POST", body: JSON.stringify(accountPayload(env, team, ip)) });
+    const acct = await call("/v1/accounts", { method: "POST", body: JSON.stringify(accountPayload(env, team, ip)) });
     accountId = acct.id;
     await env.DB.prepare("UPDATE teams SET alpaca_account_id = ?, status = 'pending_funding' WHERE id = ?")
       .bind(accountId, team.id)
@@ -199,14 +229,14 @@ async function finishProvisioning(env, team, ip) {
 
   // Sandbox approval is simulated; give it a few seconds to become ACTIVE.
   for (let i = 0; i < 5; i++) {
-    const acct = await alpaca(env, `/v1/accounts/${accountId}`);
+    const acct = await call(`/v1/accounts/${accountId}`);
     if (acct.status === "ACTIVE") break;
     if (i === 4) return false; // cron will retry
     await new Promise((r) => setTimeout(r, 1000));
   }
 
   // Fund via a simulated ACH deposit (sandbox executes it immediately).
-  const rel = await alpaca(env, `/v1/accounts/${accountId}/ach_relationships`, {
+  const rel = await call(`/v1/accounts/${accountId}/ach_relationships`, {
     method: "POST",
     body: JSON.stringify({
       account_owner_name: `Team ${team.id}`,
@@ -217,13 +247,13 @@ async function finishProvisioning(env, team, ip) {
     }),
   }).catch(async (e) => {
     if (e.status === 409) {
-      const list = await alpaca(env, `/v1/accounts/${accountId}/ach_relationships`);
+      const list = await call(`/v1/accounts/${accountId}/ach_relationships`);
       return list[0];
     }
     throw e;
   });
 
-  await alpaca(env, `/v1/accounts/${accountId}/transfers`, {
+  await call(`/v1/accounts/${accountId}/transfers`, {
     method: "POST",
     body: JSON.stringify({
       transfer_type: "ach",
@@ -452,9 +482,11 @@ async function fetchHandler(req, env) {
 /* ---------- cron: retry funding, then snapshot equity ---------- */
 
 async function scheduled(_evt, env) {
+  alpacaToken = null;
+  alpacaTokenExpiresAt = 0;
   const retry = await env.DB.prepare("SELECT * FROM teams WHERE status = 'pending_funding'").all();
   for (const team of retry.results) {
-    try { await finishProvisioning(env, team); } catch (e) { console.error("Retry failed", team.id, e.message); }
+    try { await finishProvisioning(env, team, undefined, true); } catch (e) { console.error("Retry failed", team.id, e.message); }
   }
 
   if (!getPhase(env).tradingOpen) return;
@@ -464,7 +496,7 @@ async function scheduled(_evt, env) {
   // Workers cap subrequests per invocation (50 on the free plan); chunk or use a paid plan if teams > ~45.
   for (const t of teams) {
     try {
-      const a = await alpaca(env, `/v1/trading/accounts/${t.alpaca_account_id}/account`);
+      const a = await alpaca(env, `/v1/trading/accounts/${t.alpaca_account_id}/account`, {}, true);
       stmts.push(
         env.DB.prepare("INSERT OR IGNORE INTO equity_snapshots (team_id, ts, equity, last_equity, cash) VALUES (?, ?, ?, ?, ?)")
           .bind(t.id, ts, Number(a.equity), Number(a.last_equity), Number(a.cash))

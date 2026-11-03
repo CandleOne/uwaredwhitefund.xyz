@@ -507,6 +507,25 @@ def create_app(settings: Settings | None = None) -> Flask:
             return jsonify(error="Application file is unavailable."), 404
         return send_file(application_path, as_attachment=True, download_name=row["filename"], mimetype="text/csv")
 
+    @app.delete("/v1/applications/<int:application_id>")
+    def delete_application(application_id: int) -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        _, auth_error = require_manager()
+        if auth_error:
+            return auth_error
+        row = database().execute(
+            "SELECT filename FROM applications WHERE id = ?", (application_id,)
+        ).fetchone()
+        if row is None:
+            return jsonify(error="Application not found."), 404
+        database().execute("DELETE FROM applications WHERE id = ?", (application_id,))
+        database().commit()
+        application_path = settings.database_path.parent / "applications" / row["filename"]
+        application_path.unlink(missing_ok=True)
+        return jsonify(message="Application deleted.")
+
     def safe_event_url(value: str) -> bool:
         if "\\" in value or any(ord(character) < 32 for character in value):
             return False
