@@ -16,7 +16,7 @@
  * wrangler.toml additions:
  *
  *   [triggers]
- *   crons = ["*\/5 13-21 * * 1-5"]      # every 5 min, weekdays, covers US market hours
+ *   crons = ["*\/5 * * * *"]            # every 5 min, keeps pending funding moving
  *
  *   [[d1_databases]]
  *   binding = "DB"
@@ -227,10 +227,14 @@ async function finishProvisioning(env, team, ip, scheduled = false) {
       .run();
   }
 
+  let account;
   for (let i = 0; i < 5; i++) {
-    const acct = await call(`/v1/accounts/${accountId}`);
-    if (acct.status === "ACTIVE") break;
-    if (i === 4) return false;
+    account = await call(`/v1/accounts/${accountId}`);
+    if (account.status === "ACTIVE") break;
+    if (i === 4) {
+      console.log("Funding waiting", team.id, "account", account.status);
+      return false;
+    }
     await new Promise((r) => setTimeout(r, 1000));
   }
 
@@ -248,7 +252,10 @@ async function finishProvisioning(env, team, ip, scheduled = false) {
       }),
     });
   }
-  if (rel.status !== "APPROVED") return false;
+  if (rel.status !== "APPROVED") {
+    console.log("Funding waiting", team.id, "relationship", rel.status);
+    return false;
+  }
 
   const transfers = await call(`/v1/accounts/${accountId}/transfers`);
   let transfer = transfers.find((t) => t.type === "ach" && t.direction === "INCOMING" && Number(t.amount) === STARTING_CAPITAL);
@@ -265,9 +272,13 @@ async function finishProvisioning(env, team, ip, scheduled = false) {
   }
   if (!["COMPLETE", "SETTLED"].includes(transfer.status)) {
     const trading = await call(`/v1/trading/accounts/${accountId}/account`);
-    if (Number(trading.cash) < STARTING_CAPITAL) return false;
+    if (Number(trading.cash) < STARTING_CAPITAL) {
+      console.log("Funding waiting", team.id, "transfer", transfer.status, "cash", trading.cash);
+      return false;
+    }
   }
 
+  console.log("Funding complete", team.id);
   await env.DB.prepare("UPDATE teams SET status = 'active' WHERE id = ?").bind(team.id).run();
   return true;
 }
@@ -490,8 +501,9 @@ async function scheduled(_evt, env) {
   alpacaToken = null;
   alpacaTokenExpiresAt = 0;
   const retry = await env.DB.prepare("SELECT * FROM teams WHERE status = 'pending_funding'").all();
+  if (retry.results.length) console.log("Funding retries", retry.results.length);
   for (const team of retry.results) {
-    try { await finishProvisioning(env, team, undefined, true); } catch (e) { console.error("Retry failed", team.id, e.message); }
+    try { await finishProvisioning(env, team, undefined, true); } catch (e) { console.error("Retry failed", team.id, e.message, JSON.stringify(e.body || {})); }
   }
 
   if (!getPhase(env).tradingOpen) return;
