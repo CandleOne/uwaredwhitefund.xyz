@@ -260,6 +260,66 @@ async function competitionFetch(path, options = {}) {
   return payload;
 }
 
+const countdownForm = document.querySelector("[data-countdown-form]");
+const countdownStatus = document.querySelector("[data-countdown-status]");
+const countdownTarget = document.querySelector("#countdown-target");
+
+function toLocalInput(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function renderCountdownStatus(state) {
+  const countdown = state.countdown || {};
+  if (countdown.active) {
+    countdownStatus.textContent = `Countdown is showing on the public pages. Opens ${new Date(countdown.target).toLocaleString()}.`;
+    countdownTarget.value = toLocalInput(new Date(countdown.target));
+  } else if (countdown.target) {
+    countdownStatus.textContent = `Countdown finished. The competition opened ${new Date(countdown.target).toLocaleString()}.`;
+  } else {
+    countdownStatus.textContent = `No countdown is active. Phase: ${state.phase}.`;
+  }
+}
+
+async function countdownRequest(method, target) {
+  const state = await competitionFetch("/admin/countdown", {
+    method,
+    ...(target ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target }) } : {}),
+  });
+  renderCountdownStatus(state);
+  return state;
+}
+
+async function runCountdown(action, success) {
+  try {
+    await action();
+    showCompetitionMessage(success);
+  } catch (error) {
+    showCompetitionMessage(error.message, true);
+  }
+}
+
+countdownForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const date = new Date(countdownTarget.value);
+  if (Number.isNaN(date.getTime()) || date <= new Date()) {
+    showCompetitionMessage("Choose a countdown time in the future.", true);
+    return;
+  }
+  runCountdown(() => countdownRequest("PUT", date.toISOString()), "Countdown is live on the competition pages.");
+});
+countdownForm.querySelector("[data-countdown-open-now]").addEventListener("click", () => {
+  if (!window.confirm("Open the competition now and remove the countdown screen?")) return;
+  runCountdown(() => countdownRequest("PUT", new Date().toISOString()), "Competition opened.");
+});
+countdownForm.querySelector("[data-countdown-remove]").addEventListener("click", () => {
+  if (!window.confirm("Remove the countdown? The competition reverts to its scheduled start.")) return;
+  runCountdown(() => countdownRequest("DELETE"), "Countdown removed.");
+});
+countdownForm.querySelector("[data-countdown-refresh]").addEventListener("click", () => {
+  runCountdown(() => countdownRequest("GET"), "Status refreshed.");
+});
+
 function renderCompetitionTeams(teams) {
   competitionList.replaceChildren();
   competitionListStatus.hidden = teams.length > 0;

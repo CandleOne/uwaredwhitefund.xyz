@@ -174,6 +174,16 @@
                 <button class="login-submit" type="submit" data-competition-refresh>Load Teams</button>
                 <p class="dashboard-error" data-competition-message role="alert" hidden></p>
               </form>
+              <form class="admin-form" data-countdown-form>
+                <h3>Launch countdown</h3>
+                <p>Covers the registration, leaderboard, and team dashboard pages with a countdown. When it reaches zero the pages open and trading starts. Removing it reverts to the scheduled competition start.</p>
+                <p class="event-admin-status" data-countdown-status aria-live="polite">Enter the admin token above, then load teams or refresh status.</p>
+                <label class="login-field" for="countdown-target">Opens at (your local time)<input id="countdown-target" type="datetime-local" required /></label>
+                <button class="login-submit" type="submit">Start / update countdown</button>
+                <button class="login-submit" type="button" data-countdown-open-now>Open competition now</button>
+                <button class="login-submit" type="button" data-countdown-remove>Remove countdown</button>
+                <button class="login-submit" type="button" data-countdown-refresh>Refresh status</button>
+              </form>
               <div class="event-admin-list-section">
                 <h3>Registered Teams</h3>
                 <p class="event-admin-status" data-competition-team-list-status aria-live="polite">Enter the competition admin token, then load teams.</p>

@@ -80,8 +80,8 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
-function getPhase(env, now = Date.now()) {
-  const t = (k) => Date.parse(env[k]);
+function getPhase(env, now = Date.now(), launchAt = null) {
+  const t = (k) => (k === "COMP_START" && launchAt ? Date.parse(launchAt) : Date.parse(env[k]));
   const registrationOpen = now >= t("REG_OPEN") && now <= t("REG_CLOSE");
   const tradingOpen = now >= t("COMP_START") && now <= t("COMP_END");
   let phase = "upcoming";
@@ -95,10 +95,39 @@ function getPhase(env, now = Date.now()) {
     tradingOpen,
     regOpen: env.REG_OPEN,
     regClose: env.REG_CLOSE,
-    compStart: env.COMP_START,
+    compStart: launchAt || env.COMP_START,
     compEnd: env.COMP_END,
     startingCapital: STARTING_CAPITAL,
+    countdown: { active: Boolean(launchAt) && now < Date.parse(launchAt), target: launchAt, now: new Date(now).toISOString() },
   };
+}
+
+/* The admin countdown stores a launch time that overrides COMP_START. */
+async function launchOverride(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS competition_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)").run();
+  const row = await env.DB.prepare("SELECT value FROM competition_settings WHERE key = 'launch_at'").first();
+  return row?.value || null;
+}
+
+async function currentPhase(env) {
+  return getPhase(env, Date.now(), await launchOverride(env));
+}
+
+async function setCountdown(req, env) {
+  const body = await readJson(req);
+  const target = Date.parse(body?.target);
+  if (Number.isNaN(target)) return fail(req, env, 400, "Enter a valid countdown date and time.");
+  if (target >= Date.parse(env.COMP_END)) return fail(req, env, 400, "The countdown must end before the competition end date.");
+  await launchOverride(env);
+  await env.DB.prepare("INSERT INTO competition_settings (key, value) VALUES ('launch_at', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .bind(new Date(target).toISOString()).run();
+  return reply(req, env, await currentPhase(env));
+}
+
+async function clearCountdown(req, env) {
+  await launchOverride(env);
+  await env.DB.prepare("DELETE FROM competition_settings WHERE key = 'launch_at'").run();
+  return reply(req, env, await currentPhase(env));
 }
 
 async function readJson(req) {
@@ -330,7 +359,7 @@ async function authTeam(req, env, teamId) {
 /* ---------- handlers ---------- */
 
 async function register(req, env) {
-  const state = getPhase(env);
+  const state = await currentPhase(env);
   if (!state.registrationOpen) return fail(req, env, 403, "Registration is closed.");
 
   const body = await readJson(req);
@@ -459,7 +488,7 @@ async function leaderboard(req, env) {
     history = q.results.map((h) => ({ teamId: h.team_id, ts: h.ts, returnPct: ((h.equity - STARTING_CAPITAL) / STARTING_CAPITAL) * 100 }));
   }
 
-  return reply(req, env, { ...getPhase(env), teams: rows, history });
+  return reply(req, env, { ...(await currentPhase(env)), teams: rows, history });
 }
 
 async function teamDetail(req, env, team) {
@@ -472,7 +501,7 @@ async function teamDetail(req, env, team) {
     env.DB.prepare("SELECT name, email, is_lead FROM team_members WHERE team_id = ?").bind(team.id).all(),
   ]);
   return reply(req, env, {
-    ...getPhase(env),
+    ...(await currentPhase(env)),
     team: { id: team.id, name: team.name, status: team.status },
     members: members.results,
     account: {
@@ -495,7 +524,7 @@ async function teamDetail(req, env, team) {
 }
 
 async function placeOrder(req, env, team) {
-  if (!getPhase(env).tradingOpen) return fail(req, env, 403, "Trading is not open.");
+  if (!(await currentPhase(env)).tradingOpen) return fail(req, env, 403, "Trading is not open.");
   if (team.status !== "active") return fail(req, env, 409, "Your portfolio isn't funded yet.");
 
   const b = await readJson(req);
@@ -555,13 +584,18 @@ async function fetchHandler(req, env) {
 
   const path = url.pathname.replace("/v1/competition", "") || "/";
   try {
-    if (req.method === "GET" && path === "/config") return reply(req, env, getPhase(env));
+    if (req.method === "GET" && path === "/config") return reply(req, env, await currentPhase(env));
     if (req.method === "GET" && path === "/leaderboard") return leaderboard(req, env);
     if (req.method === "POST" && path === "/register") return register(req, env);
 
     if (path.startsWith("/admin/")) {
       if (!(await authAdmin(req, env))) return fail(req, env, 401, "Competition admin token is missing or incorrect.");
       if (req.method === "GET" && path === "/admin/teams") return adminListTeams(req, env);
+      if (path === "/admin/countdown") {
+        if (req.method === "GET") return reply(req, env, await currentPhase(env));
+        if (req.method === "PUT") return setCountdown(req, env);
+        if (req.method === "DELETE") return clearCountdown(req, env);
+      }
       const adminMatch = path.match(/^\/admin\/teams\/([a-z0-9-]+)(\/fund)?$/);
       if (adminMatch) {
         if (!adminMatch[2] && req.method === "DELETE") return adminDeleteTeam(req, env, adminMatch[1]);
@@ -602,7 +636,7 @@ async function scheduled(_evt, env) {
     try { await finishProvisioning(env, team, undefined, true); } catch (e) { console.error("Retry failed", team.id, e.message, JSON.stringify(e.body || {})); }
   }
 
-  if (!getPhase(env).tradingOpen) return;
+  if (!(await currentPhase(env)).tradingOpen) return;
   const { results: teams } = await env.DB.prepare("SELECT id, alpaca_account_id FROM teams WHERE status = 'active'").all();
   const ts = new Date().toISOString();
   const stmts = [];

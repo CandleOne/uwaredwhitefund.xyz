@@ -43,3 +43,8 @@ CREATE TABLE IF NOT EXISTS judge_scores (
   notes    TEXT,
   PRIMARY KEY (team_id, judge_id)
 );
+
+CREATE TABLE IF NOT EXISTS competition_settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL                              -- launch_at: ISO time the countdown ends and trading opens
+);
