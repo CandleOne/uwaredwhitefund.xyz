@@ -47,7 +47,7 @@
 		<section class="group"><h2>C-Suite</h2><p>The CIO and Chief Economist may also serve as PMs depending on participation; the CCO and CAO stay independent.</p>
 			${row(["cio", "ce", "cco", "cao", "cmo"].map(i => node(i)).join(""))}</section>
 		<div class="conn arrow"><span>Approved trades</span></div>
-		<section class="group"><h2>Portfolio Managers &amp; Investment Committee</h2><p>The seven portfolio managers work independently with their analyst to research equities, then present trades to the committee for a vote. Voting seats rotate each meeting, so only 5 of 7 PMs vote at any time. The CIO chairs and votes only to break ties; a CIO who also serves as a PM recuses on their own trades.</p>
+		<section class="group"><h2>Portfolio Managers &amp; Investment Committee</h2><p>The seven portfolio managers work independently with their analyst to research equities, then present trades to the committee for a vote. Voting seats rotate each meeting, so only 5 of 7 PMs vote at any time. The CIO chairs and votes only to break ties; a CIO who also serves as a PM does not vote on their own trades.</p>
 			${row(nums.map(i => node("pm" + i)).join(""))}</section>
 		<div class="conn arrow"></div>
 		${row(nums.map(i => node("an" + i)).join(""))}
