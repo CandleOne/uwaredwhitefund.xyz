@@ -33,12 +33,16 @@
  *   COMP_END    = "2027-02-16T16:00:00-06:00"
  *
  * Secrets (wrangler secret put ...): ALPACA_KEY, ALPACA_SECRET
+ * Market data (chart bars): ALPACA_DATA_KEY, ALPACA_DATA_SECRET. These are a separate
+ * Alpaca Market Data API key pair from the Alpaca dashboard, not the Broker OAuth client.
  */
 
 const STARTING_CAPITAL = 100000;
 const MAX_MEMBERS = 4;
 const SYMBOL_RE = /^[A-Z]{1,5}(\.[A-Z])?$/;
 const BROKER_SANDBOX_HOST = "broker-api.sandbox.alpaca.markets";
+const MARKET_DATA_BASE = "https://data.alpaca.markets";
+const BAR_TIMEFRAMES = { "1Min": 2, "5Min": 5, "15Min": 10, "1Hour": 30, "1Day": 365 };
 
 /* ---------- helpers ---------- */
 
@@ -192,6 +196,29 @@ async function alpaca(env, path, init = {}, scheduled = false) {
   }
   if (!res.ok) {
     const err = new Error(`Alpaca ${res.status} ${init.method || "GET"} ${path}`);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  return body;
+}
+
+async function marketData(env, path) {
+  if (!env.ALPACA_DATA_KEY || !env.ALPACA_DATA_SECRET) {
+    const err = new Error("Market data keys are not configured.");
+    err.status = 503;
+    throw err;
+  }
+  const res = await fetch(MARKET_DATA_BASE + path, {
+    headers: {
+      "APCA-API-KEY-ID": env.ALPACA_DATA_KEY,
+      "APCA-API-SECRET-KEY": env.ALPACA_DATA_SECRET,
+      Accept: "application/json",
+    },
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error(`Market data ${res.status} GET ${path}`);
     err.status = res.status;
     err.body = body;
     throw err;
@@ -602,6 +629,27 @@ async function saveStrategy(req, env, team) {
   return reply(req, env, { ok: true });
 }
 
+async function bars(req, env) {
+  const url = new URL(req.url);
+  const symbol = String(url.searchParams.get("symbol") || "").toUpperCase();
+  if (!SYMBOL_RE.test(symbol)) return fail(req, env, 400, "Enter a valid symbol.");
+  const timeframe = url.searchParams.get("timeframe") || "1Day";
+  if (!Object.hasOwn(BAR_TIMEFRAMES, timeframe)) return fail(req, env, 400, "Unsupported timeframe.");
+
+  const start = new Date(Date.now() - BAR_TIMEFRAMES[timeframe] * 86400000).toISOString();
+  const query = new URLSearchParams({ timeframe, start, feed: "iex", adjustment: "split", limit: "1000" });
+  try {
+    const data = await marketData(env, `/v2/stocks/${symbol}/bars?${query}`);
+    const res = reply(req, env, { symbol, timeframe, bars: data.bars || [] });
+    res.headers.set("Cache-Control", "private, max-age=60");
+    return res;
+  } catch (err) {
+    if (err.status === 503) return fail(req, env, 503, "Chart data is not configured yet.");
+    if (err.status === 400 || err.status === 404 || err.status === 422) return fail(req, env, 404, "No price data for that symbol.");
+    throw err;
+  }
+}
+
 /* ---------- router ---------- */
 
 async function fetchHandler(req, env) {
@@ -637,13 +685,14 @@ async function fetchHandler(req, env) {
       return fail(req, env, 404, "Not found.");
     }
 
-    const m = path.match(/^\/teams\/([a-z0-9-]+)(\/orders|\/strategy)?$/);
+    const m = path.match(/^\/teams\/([a-z0-9-]+)(\/orders|\/strategy|\/bars)?$/);
     if (m) {
       const team = await authTeam(req, env, m[1]);
       if (!team) return fail(req, env, 401, "Team passcode is missing or incorrect.");
       if (!m[2] && req.method === "GET") return teamDetail(req, env, team);
       if (m[2] === "/orders" && req.method === "POST") return placeOrder(req, env, team);
       if (m[2] === "/strategy" && req.method === "PUT") return saveStrategy(req, env, team);
+      if (m[2] === "/bars" && req.method === "GET") return bars(req, env);
     }
     return fail(req, env, 404, "Not found.");
   } catch (err) {

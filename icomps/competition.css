@@ -45,6 +45,11 @@
 .order-ticket { margin: 32px 0; padding: 24px; background: #f2f3f3; }
 .trading-desk { margin: 0 0 32px; }
 .trading-desk > h3 { margin-top: 0; }
+.price-chart { margin: 0 0 32px; }
+.price-chart > h3 { margin-top: 0; }
+.price-chart-canvas { width: 100%; height: 340px; }
+.chart-status { margin: 0 0 8px; min-height: 1.2em; }
+.chart-status.is-error { color: var(--crimson); }
 .order-held { margin: 12px 0 0; font-weight: 700; }
 .order-review { margin: 0 0 24px; padding: 20px 24px; background: #fff; border-left: 4px solid var(--crimson); }
 .order-summary { margin: 0 0 16px; }

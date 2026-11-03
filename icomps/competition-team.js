@@ -15,10 +15,76 @@
   let strategyLoaded = false;
   let positions = [];
   let pendingOrder = null;
+  let buyingPower = 0;
+  let lastBar = null;
+  let chart = null;
+  let candles = null;
+  let chartRequest = 0;
+  let chartTimer = null;
+  const chartEl = $("[data-chart]");
+  const chartStatus = $("[data-chart-status]");
 
   function setMessage(el, text, isError) {
     el.textContent = text;
     el.classList.toggle("is-error", Boolean(isError));
+  }
+
+  function setChartStatus(text, isError) {
+    chartStatus.textContent = text;
+    chartStatus.classList.toggle("is-error", Boolean(isError));
+  }
+
+  function ensureChart() {
+    if (chart) return true;
+    const LW = window.LightweightCharts;
+    if (!LW) return false;
+    chart = LW.createChart(chartEl, { autoSize: true });
+    candles = chart.addSeries(LW.CandlestickSeries, {
+      upColor: "#2e7d32",
+      downColor: "#b71c1c",
+      borderVisible: false,
+      wickUpColor: "#2e7d32",
+      wickDownColor: "#b71c1c",
+    });
+    return true;
+  }
+
+  async function loadChart(symbol) {
+    const request = ++chartRequest;
+    if (!ensureChart()) {
+      setChartStatus("The chart library didn't load. Check your connection and refresh the page.", true);
+      return;
+    }
+    setChartStatus(`Loading ${symbol}…`, false);
+    try {
+      const data = await C.api(`/teams/${encodeURIComponent(teamId)}/bars?symbol=${encodeURIComponent(symbol)}&timeframe=1Day`, { teamKey });
+      if (request !== chartRequest) return;
+      candles.setData(data.bars.map((b) => ({ time: b.t.slice(0, 10), open: b.o, high: b.h, low: b.l, close: b.c })));
+      chart.timeScale().fitContent();
+      const last = data.bars[data.bars.length - 1];
+      lastBar = last ? { symbol, close: last.c, date: last.t.slice(0, 10) } : null;
+      setChartStatus(lastBar ? `${symbol} last close ${C.money(lastBar.close)} on ${lastBar.date}.` : `No recent price data for ${symbol}.`, false);
+    } catch (err) {
+      if (request !== chartRequest) return;
+      lastBar = null;
+      candles.setData([]);
+      setChartStatus(err.message, true);
+    }
+    updateHeld();
+  }
+
+  function scheduleChart() {
+    clearTimeout(chartTimer);
+    const symbol = orderForm.elements.symbol.value.trim().toUpperCase();
+    if (!/^[A-Z]{1,5}(\.[A-Z])?$/.test(symbol)) {
+      chartRequest++;
+      lastBar = null;
+      if (candles) candles.setData([]);
+      setChartStatus("Enter a symbol to see its chart.", false);
+      updateHeld();
+      return;
+    }
+    chartTimer = setTimeout(() => loadChart(symbol), 400);
   }
 
   function heldShares(symbol) {
@@ -33,7 +99,9 @@
       readout.textContent = "";
     } else {
       const held = heldShares(symbol);
-      readout.textContent = held ? `You hold ${held} shares of ${symbol}.` : `You hold no shares of ${symbol}.`;
+      const holdingText = held ? `You hold ${held} shares of ${symbol}.` : `You hold no shares of ${symbol}.`;
+      const priceText = lastBar && lastBar.symbol === symbol ? ` Last close ${C.money(lastBar.close)}.` : "";
+      readout.textContent = holdingText + priceText;
     }
     orderForm.elements.qty.max = orderForm.elements.side.value === "sell" && symbol ? heldShares(symbol) : "";
   }
@@ -56,7 +124,12 @@
     if (side === "sell" && qty > heldShares(symbol)) {
       return { error: `You only hold ${heldShares(symbol)} shares of ${symbol}, so you can't sell ${qty}.` };
     }
-    return { order: { symbol, side, qty, type, limitPrice } };
+    const price = type === "limit" ? limitPrice : lastBar && lastBar.symbol === symbol ? lastBar.close : null;
+    const estimate = price ? qty * price : null;
+    if (side === "buy" && estimate !== null && estimate > buyingPower) {
+      return { error: `Estimated cost ${C.money(estimate)} is more than your buying power of ${C.money(buyingPower)}.` };
+    }
+    return { order: { symbol, side, qty, type, limitPrice, estimate } };
   }
 
   function render(d) {
@@ -106,6 +179,7 @@
     }));
 
     positions = d.positions;
+    buyingPower = Number(d.account.buying_power) || 0;
     updateHeld();
 
     const canTrade = d.tradingOpen && d.team.status === "active";
@@ -161,7 +235,10 @@
     $("[data-limit-wrap]").hidden = orderForm.elements.type.value !== "limit";
   });
 
-  orderForm.elements.symbol.addEventListener("input", updateHeld);
+  orderForm.elements.symbol.addEventListener("input", () => {
+    updateHeld();
+    scheduleChart();
+  });
   orderForm.elements.side.addEventListener("change", updateHeld);
   orderForm.addEventListener("input", clearReview);
   orderForm.addEventListener("change", clearReview);
@@ -178,7 +255,10 @@
     pendingOrder = result.order;
     const o = pendingOrder;
     const priceText = o.type === "limit" ? ` at a limit of ${C.money(o.limitPrice)}` : " at market";
-    $("[data-order-summary]").textContent = `Review: ${o.side} ${o.qty} shares of ${o.symbol}${priceText}. Day order.`;
+    const estText = o.estimate !== null
+      ? ` Estimated ${o.side === "buy" ? "cost" : "proceeds"} ${C.money(o.estimate)}${o.type === "market" ? " (at the last close)" : ""}.`
+      : "";
+    $("[data-order-summary]").textContent = `Review: ${o.side} ${o.qty} shares of ${o.symbol}${priceText}. Day order.${estText}`;
     $("[data-order-review-panel]").hidden = false;
     setMessage(msg, "", false);
     $("[data-order-confirm]").focus();

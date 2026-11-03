@@ -53,6 +53,13 @@
             <div><dt>Day change</dt><dd data-day-change>—</dd></div>
           </dl>
 
+          <section class="price-chart" aria-labelledby="chart-heading">
+            <h3 id="chart-heading">Price chart</h3>
+            <p class="chart-status" data-chart-status role="status"></p>
+            <div class="price-chart-canvas" data-chart aria-label="Daily price chart for the selected symbol"></div>
+            <p class="form-hint">Daily bars from Alpaca (IEX feed). Chart by <a href="https://www.tradingview.com/" rel="noopener">TradingView Lightweight Charts</a>.</p>
+          </section>
+
           <section class="trading-desk" aria-labelledby="desk-heading">
             <h3 id="desk-heading">Trading desk</h3>
             <form class="competition-form order-ticket" data-order-form novalidate>
@@ -125,6 +132,7 @@
         </ul>
       </div>
     </footer>
+    <script src="https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js" integrity="sha384-KkYqTZlM13Zya6fVUF3IGCBOQ1ehFeJVVgxaVvD/0MebineF9EI8Jkd3NnWNChqN" crossorigin="anonymous"></script>
     <script src="competition-common.js"></script>
     <script src="competition-team.js"></script>
   </body>
