@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz">
+<title>Edit Org Chart | Red &amp; White Fund</title>
+<link rel="stylesheet" href="org-chart.css">
+<script src="org-chart.js" defer></script>
+</head>
+<body>
+<div class="admin-bar">
+	<strong>Org chart editor</strong>
+	<button id="save" type="button">Save &amp; publish</button>
+	<button id="reset" type="button" style="background:#555">Discard changes</button>
+	<a href="member-management.html">&larr; Back to administration</a>
+	<span id="msg" role="status">Click a box to edit it.</span>
+</div>
+<header>
+	<h1>Red &amp; White Fund</h1>
+	<p>Select a role, edit its holder and details, apply, then publish. Dots mark unsaved roles.</p>
+	<div class="legend"><span><i></i>Filled</span><span><i class="o"></i>Open position</span></div>
+</header>
+<main class="chart" id="chart" aria-label="Editable organizational chart"></main>
+<aside id="panel" aria-label="Edit role"><button id="close" aria-label="Close">&times;</button><div id="body"></div></aside>
+<script>window.addEventListener("DOMContentLoaded", () => OrgChart.init({ editable: true }));</script>
+</body>
+</html>

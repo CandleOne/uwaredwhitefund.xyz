@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="alpaca-api-base" content="https://api.uwaredwhitefund.xyz">
+<title>Organizational Chart | Red &amp; White Fund</title>
+<link rel="stylesheet" href="org-chart.css">
+<script src="org-chart.js" defer></script>
+</head>
+<body>
+<header>
+	<h1>Red &amp; White Fund</h1>
+	<p>Organizational Chart &mdash; click any box for role details, who holds it, and openings</p>
+	<div class="legend"><span><i></i>Filled</span><span><i class="o"></i>Open position</span></div>
+</header>
+<main class="chart" id="chart" aria-label="Organizational chart"></main>
+<aside id="panel" aria-live="polite" aria-label="Role details"><button id="close" aria-label="Close">&times;</button><div id="body"></div></aside>
+<script>window.addEventListener("DOMContentLoaded", () => OrgChart.init());</script>
+</body>
+</html>

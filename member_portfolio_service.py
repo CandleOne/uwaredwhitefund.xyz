@@ -271,6 +271,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.route("/v1/auth", methods=["OPTIONS"])
     @app.route("/v1/portfolios", methods=["OPTIONS"])
     @app.route("/v1/events", methods=["OPTIONS"])
+    @app.route("/v1/org-chart", methods=["OPTIONS"])
     @app.route("/v1/event-posters", methods=["OPTIONS"])
     @app.route("/v1/event-posters/<path:filename>", methods=["OPTIONS"])
     @app.route("/v1/applications", methods=["OPTIONS"])
@@ -755,6 +756,78 @@ def create_app(settings: Settings | None = None) -> Flask:
         if cursor.rowcount == 0:
             return jsonify(error="Event not found."), 404
         return jsonify(message="Event removed.")
+
+    org_role_keys = (
+        [f"admin{i}" for i in range(1, 5)]
+        + ["advisor", "cio", "ce", "cco", "cao", "cmo"]
+        + [f"pm{i}" for i in range(1, 8)]
+        + [f"an{i}" for i in range(1, 8)]
+    )
+
+    def stored_org_chart() -> dict[str, Any]:
+        row = database().execute(
+            "SELECT setting_value FROM application_settings WHERE setting_key = 'org_chart'"
+        ).fetchone()
+        if row is None:
+            return {}
+        try:
+            data = json.loads(row["setting_value"])
+        except ValueError:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def validated_org_chart(payload: object) -> tuple[dict[str, Any] | None, Response | None]:
+        roles = payload.get("roles") if isinstance(payload, dict) else None
+        if not isinstance(roles, dict):
+            return None, (jsonify(error="A roles object is required."), 400)
+        limits = {"holder": 100, "summary": 500, "requirements": 500}
+        cleaned: dict[str, Any] = {}
+        for key, role in roles.items():
+            if key not in org_role_keys or not isinstance(role, dict):
+                return None, (jsonify(error=f"Unknown role: {key}."), 400)
+            entry: dict[str, Any] = {}
+            for field, limit in limits.items():
+                if field in role:
+                    value = role[field]
+                    if not isinstance(value, str) or len(value.strip()) > limit:
+                        return None, (jsonify(error=f"{field} must be text up to {limit} characters."), 400)
+                    entry[field] = value.strip()
+            if "duties" in role:
+                duties = role["duties"]
+                if (
+                    not isinstance(duties, list)
+                    or len(duties) > 12
+                    or any(not isinstance(d, str) or len(d.strip()) > 200 for d in duties)
+                ):
+                    return None, (jsonify(error="duties must be up to 12 items of 200 characters."), 400)
+                entry["duties"] = [d.strip() for d in duties if d.strip()]
+            cleaned[key] = entry
+        return cleaned, None
+
+    @app.get("/v1/org-chart")
+    def get_org_chart() -> Response:
+        return jsonify(roles=stored_org_chart())
+
+    @app.put("/v1/org-chart")
+    def update_org_chart() -> Response:
+        csrf_error = validate_csrf()
+        if csrf_error:
+            return csrf_error
+        user, auth_error = require_user()
+        if auth_error:
+            return auth_error
+        if user["role"] != "manager":
+            return jsonify(error="Only managers can edit the org chart."), 403
+        roles, validation_error = validated_org_chart(request.get_json(silent=True))
+        if validation_error:
+            return validation_error
+        database().execute(
+            """INSERT INTO application_settings (setting_key, setting_value) VALUES ('org_chart', ?)
+               ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value""",
+            (json.dumps(roles),),
+        )
+        database().commit()
+        return jsonify(roles=roles)
 
     @app.get("/v1/portfolios")
     def list_portfolios() -> Response:

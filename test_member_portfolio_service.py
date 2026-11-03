@@ -323,5 +323,19 @@ class MemberServiceTest(unittest.TestCase):
         trading_client.assert_called_with("default-key", "default-secret", paper=True)
 
 
+    def test_manager_can_publish_org_chart(self):
+        anonymous = self.app.test_client()
+        self.assertEqual(anonymous.get("/v1/org-chart").json["roles"], {})
+        token = self.status().json["csrf_token"]
+        payload = {"roles": {"cio": {"holder": "Jane Doe", "duties": ["Chair meetings"]}}}
+        self.assertEqual(self.client.put("/v1/org-chart", json=payload, headers={**self.origin, "X-CSRF-Token": token}).status_code, 401)
+        self.post("/v1/auth/setup", token, {"email": "manager@example.com", "password": "test-password-123"})
+        token = self.status().json["csrf_token"]
+        headers = {**self.origin, "X-CSRF-Token": token}
+        self.assertEqual(self.client.put("/v1/org-chart", json={"roles": {"bogus": {}}}, headers=headers).status_code, 400)
+        self.assertEqual(self.client.put("/v1/org-chart", json=payload, headers=headers).status_code, 200)
+        self.assertEqual(anonymous.get("/v1/org-chart").json["roles"]["cio"]["holder"], "Jane Doe")
+
+
 if __name__ == "__main__":
     unittest.main()
