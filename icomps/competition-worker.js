@@ -457,23 +457,28 @@ async function adminDeleteTeam(req, env, teamId) {
 
 async function leaderboard(req, env) {
   const { results } = await env.DB.prepare(
-    `SELECT t.id, t.name, s.equity, s.last_equity, s.cash, s.ts
+    `SELECT t.id, t.name, t.status, s.equity, s.last_equity, s.cash, s.ts
        FROM teams t
-       JOIN equity_snapshots s ON s.team_id = t.id
+       LEFT JOIN equity_snapshots s ON s.team_id = t.id
         AND s.ts = (SELECT MAX(ts) FROM equity_snapshots WHERE team_id = t.id)
-      WHERE t.status = 'active'`
+      WHERE t.status IN ('active', 'pending_funding')`
   ).all();
 
   const rows = results
-    .map((r) => ({
-      teamId: r.id,
-      team: r.name,
-      equity: r.equity,
-      cash: r.cash,
-      dayChange: r.equity - r.last_equity,
-      returnPct: ((r.equity - STARTING_CAPITAL) / STARTING_CAPITAL) * 100,
-      updatedAt: r.ts,
-    }))
+    .map((r) => {
+      const equity = r.equity === null ? STARTING_CAPITAL : Number(r.equity);
+      const lastEquity = r.last_equity === null ? STARTING_CAPITAL : Number(r.last_equity);
+      return {
+        teamId: r.id,
+        team: r.name,
+        status: r.status,
+        equity,
+        cash: r.cash === null ? (r.status === "pending_funding" ? 0 : STARTING_CAPITAL) : Number(r.cash),
+        dayChange: equity - lastEquity,
+        returnPct: ((equity - STARTING_CAPITAL) / STARTING_CAPITAL) * 100,
+        updatedAt: r.ts,
+      };
+    })
     .sort((a, b) => b.returnPct - a.returnPct)
     .map((r, i) => ({ rank: i + 1, ...r }));
 

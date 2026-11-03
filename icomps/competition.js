@@ -24,7 +24,7 @@
     const rows = teams.map((t) => {
       const tr = document.createElement("tr");
       C.cell(tr, String(t.rank));
-      C.cell(tr, t.team);
+      C.cell(tr, t.status === "pending_funding" ? `${t.team} (funding)` : t.team);
       C.cell(tr, C.pct(t.returnPct), C.tone(t.returnPct));
       C.cell(tr, C.money(t.equity));
       C.cell(tr, C.signed(t.dayChange), C.tone(t.dayChange));
