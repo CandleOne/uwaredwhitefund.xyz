@@ -306,6 +306,9 @@
     }
   });
 
+  if (ensureChart()) setChartStatus("Enter a symbol to see its chart.", false);
+  else setChartStatus("The chart library didn't load. Check your connection and refresh the page.", true);
+
   if (teamId && teamKey) start();
   else showSignin("");
 })();
