@@ -21,6 +21,8 @@
   let candles = null;
   let chartRequest = 0;
   let chartTimer = null;
+  const DEFAULT_TICKERS = ["SPY", "QQQ", "DIA", "IWM"];
+  let activeSymbol = "SPY";
   const chartEl = $("[data-chart]");
   const chartStatus = $("[data-chart-status]");
 
@@ -80,11 +82,36 @@
       chartRequest++;
       lastBar = null;
       if (candles) candles.setData([]);
-      setChartStatus("Enter a symbol to see its chart.", false);
+      setChartStatus("Enter a valid symbol to see its chart.", false);
       updateHeld();
       return;
     }
+    activeSymbol = symbol;
+    renderNav();
     chartTimer = setTimeout(() => loadChart(symbol), 400);
+  }
+
+  function selectTicker(symbol) {
+    clearTimeout(chartTimer);
+    activeSymbol = symbol;
+    orderForm.elements.symbol.value = symbol;
+    updateHeld();
+    renderNav();
+    loadChart(symbol);
+  }
+
+  function renderNav() {
+    const nav = $("[data-ticker-nav]");
+    const symbols = [...new Set([...DEFAULT_TICKERS, ...positions.map((p) => p.symbol)])];
+    nav.replaceChildren(...symbols.map((sym) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = sym;
+      btn.className = "ticker-btn";
+      btn.setAttribute("aria-pressed", String(sym === activeSymbol));
+      btn.addEventListener("click", () => selectTicker(sym));
+      return btn;
+    }));
   }
 
   function heldShares(symbol) {
@@ -180,6 +207,7 @@
 
     positions = d.positions;
     buyingPower = Number(d.account.buying_power) || 0;
+    renderNav();
     updateHeld();
 
     const canTrade = d.tradingOpen && d.team.status === "active";
@@ -218,6 +246,7 @@
     dash.hidden = false;
     strategyLoaded = false;
     refresh();
+    selectTicker(activeSymbol);
     clearInterval(timer);
     timer = setInterval(() => { if (!document.hidden) refresh(); }, 15000);
   }
@@ -285,6 +314,7 @@
       setMessage(msg, `Order submitted: ${o.side} ${o.qty} ${o.symbol}.`, false);
       clearReview();
       orderForm.reset();
+      orderForm.elements.symbol.value = activeSymbol;
       $("[data-limit-wrap]").hidden = true;
       updateHeld();
       refresh();
@@ -306,8 +336,7 @@
     }
   });
 
-  if (ensureChart()) setChartStatus("Enter a symbol to see its chart.", false);
-  else setChartStatus("The chart library didn't load. Check your connection and refresh the page.", true);
+  if (!ensureChart()) setChartStatus("The chart library didn't load. Check your connection and refresh the page.", true);
 
   if (teamId && teamKey) start();
   else showSignin("");
