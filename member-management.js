@@ -30,6 +30,7 @@ const competitionTokenInput = document.querySelector("#competition-admin-token")
 const competitionMessage = document.querySelector("[data-competition-message]");
 const competitionList = document.querySelector("[data-competition-team-list]");
 const competitionListStatus = document.querySelector("[data-competition-team-list-status]");
+const competitionTokenForm = document.querySelector("[data-competition-token-form]");
 const competitionRefreshButton = document.querySelector("[data-competition-refresh]");
 let csrfToken = "";
 let editingEventId = null;
@@ -641,7 +642,9 @@ applicationList.addEventListener("click", async (event) => {
   }
 });
 
-competitionRefreshButton.addEventListener("click", async () => {
+competitionTokenForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  competitionRefreshButton.disabled = true;
   try {
     await loadCompetitionTeams();
     showCompetitionMessage("Competition teams loaded.");
@@ -649,6 +652,8 @@ competitionRefreshButton.addEventListener("click", async () => {
     competitionListStatus.hidden = false;
     competitionListStatus.textContent = error.message;
     showCompetitionMessage(error.message, true);
+  } finally {
+    competitionRefreshButton.disabled = false;
   }
 });
 

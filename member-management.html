@@ -169,9 +169,9 @@
                 <h3>Competition teams</h3>
                 <p>Add sandbox funding to a team portfolio or permanently remove a team from the competition.</p>
               </div>
-              <form class="admin-form" onsubmit="return false">
+              <form class="admin-form" data-competition-token-form>
                 <label class="login-field" for="competition-admin-token">Competition admin token<input id="competition-admin-token" type="password" autocomplete="off" required /></label>
-                <button class="login-submit" type="button" data-competition-refresh>Load Teams</button>
+                <button class="login-submit" type="submit" data-competition-refresh>Load Teams</button>
                 <p class="dashboard-error" data-competition-message role="alert" hidden></p>
               </form>
               <div class="event-admin-list-section">
