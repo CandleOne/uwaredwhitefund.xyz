@@ -386,6 +386,7 @@
   function showSignin(message) {
     clearInterval(timer);
     dash.hidden = true;
+    $("[data-logout]").closest(".session-bar").hidden = true;
     signin.hidden = false;
     signin.elements.teamId.value = teamId;
     C.showError(errorEl, message || "");
@@ -394,6 +395,7 @@
   function start() {
     signin.hidden = true;
     dash.hidden = false;
+    $("[data-logout]").closest(".session-bar").hidden = false;
     strategyLoaded = false;
     refresh();
     selectTicker(activeSymbol);
@@ -408,6 +410,13 @@
     sessionStorage.setItem("cmp-last-team", teamId);
     sessionStorage.setItem(`cmp-key-${teamId}`, teamKey);
     start();
+  });
+
+  $("[data-logout]").addEventListener("click", () => {
+    sessionStorage.removeItem(`cmp-key-${teamId}`);
+    teamKey = "";
+    phaseEl.textContent = "Sign in with your team passcode.";
+    showSignin("You've been logged out.");
   });
 
   orderForm.elements.type.addEventListener("change", () => {
