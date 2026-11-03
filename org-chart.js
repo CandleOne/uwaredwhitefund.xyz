@@ -19,7 +19,7 @@
 	});
 	for (let i = 1; i <= 7; i++) {
 		ROLES["pm" + i] = { title: "Portfolio Manager", num: i, summary: "Researches equities with their analyst team and presents potential trades to the investment committee.", duties: ["Work independently with paired analyst team to research equities", "Present trade ideas at committee meetings", "Vote when holding a rotating voting seat (5 of 7 vote at any meeting)"] };
-		ROLES["an" + i] = { title: "Analyst", num: i, summary: "Helps their paired portfolio manager research the equities they wish to trade.", duties: ["Research equities for the paired PM", "Prepare pitch materials and models"] };
+		ROLES["an" + i] = { title: "Analyst Team", num: i, summary: "Helps their paired portfolio manager research the equities they wish to trade.", duties: ["Research equities for the paired PM", "Prepare pitch materials and models"] };
 	}
 	for (const r of Object.values(ROLES)) { r.holder = ""; r.requirements = ""; }
 	const DEFAULTS = JSON.parse(JSON.stringify(ROLES));
